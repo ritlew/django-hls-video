@@ -7,5 +7,7 @@ import subprocess
 
 
 def pull(request):
-    subprocess.call("ssh-agent bash -c 'ssh-add /home4/square13/public_html/ritlew/code/ritlew/id_rsa; git pull'", shell=True)
-    return HttpResponse(status=200)
+    if request.method == "POST":
+        subprocess.call("ssh-agent bash -c 'ssh-add /home4/square13/public_html/ritlew/code/ritlew/id_rsa; git pull'", shell=True)
+        return HttpResponse(status=200)
+    return HttpResponse(status=404)
