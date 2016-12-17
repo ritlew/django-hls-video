@@ -25,7 +25,7 @@ SECRET_KEY = 'r!=@d0n_+2*i$*2o3i@$7yq!0$23v(!w8iz1!_34y-v(7+&x93'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['ritlew.com', 'localhost']
 
 
 # Application definition
