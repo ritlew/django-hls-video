@@ -7,6 +7,11 @@
           <mappings>
             <mapping deploy="/home/ritlew/www" local="$PROJECT_DIR$" web="/" />
           </mappings>
+          <excludedPaths>
+            <excludedPath local="true" path="$PROJECT_DIR$/.idea" />
+            <excludedPath local="true" path="$PROJECT_DIR$/venv" />
+            <excludedPath local="true" path="$PROJECT_DIR$/db.sqlite3" />
+          </excludedPaths>
         </serverdata>
       </paths>
     </serverData>

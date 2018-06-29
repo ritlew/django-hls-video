@@ -25,7 +25,7 @@ SECRET_KEY = 'r!=@d0n_+2*i$*2o3i@$7yq!0$23v(!w8iz1!_34y-v(7+&x93'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['ritlew.com', 'localhost']
+ALLOWED_HOSTS = ['ritlew.com', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -120,6 +120,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = 'static'
 
 if os.environ.get('DJANGO_SETTINGS') == 'production':
     from ritlew.production import *
