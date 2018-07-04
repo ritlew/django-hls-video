@@ -1,0 +1,4 @@
+Django==2.0.6
+pytz==2018.4
+uWSGI==2.0.17
+uwsgidecorators==1.1.0

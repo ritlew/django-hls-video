@@ -3,9 +3,13 @@
 <html lang="en">
 <head>
     <link rel="stylesheet" type="text/css" href="{% static 'home/css/bootstrap.min.css' %}">
-    <script src="{% static 'home/js/jquery-3.3.1.min.js' %}" ></script>
+    <link rel="stylesheet" type="text/css" href="{% static 'home/fontawesome/css/all.css' %}">
+    <link rel="shortcut icon" href="{% static 'home/image/favicon.ico' %}"/>
+    <script src="{% static 'home/js/jquery-3.3.1.min.js' %}"></script>
     <script src="{% static 'home/js/bootstrap.js' %}"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% block head %}
+    {% endblock %}
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
@@ -21,10 +25,10 @@
                 <a class="nav-link" href="{% url 'index' %}">Home<span class="sr-only">(current)</span></a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#">Videos</a>
+                <a class="nav-link" href="{% url 'video' %}">Videos</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#">Music</a>
+                <a class="nav-link" href="{% url 'music' %}">Music</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="#">Recipes</a>
@@ -32,5 +36,9 @@
         </ul>
     </div>
 </nav>
+<div class="container">
+    {% block main %}
+    {% endblock %}
+</div>
 </body>
 </html>

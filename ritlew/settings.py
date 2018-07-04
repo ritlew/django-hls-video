@@ -64,6 +64,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.media',
             ],
         },
     },
@@ -100,7 +101,16 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+try:
+    import uwsgi
+    from uwsgidecorators import timer
 
+
+    @timer(3)
+    def change_code_gracefull_reload(sig):
+        uwsgi.reload()
+except:
+    pass
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.9/topics/i18n/
