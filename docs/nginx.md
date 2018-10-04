@@ -88,3 +88,29 @@ sudo ln -s /etc/nginx/sites-available/prod-ritlew /etc/nginx/sites-enabled/prod-
 ```
 sudo service nginx restart
 ```
+
+## SSL
+SSL should be enabled on the server as soon as it is ready. For obvious reason, Let's Encrypt is used
+for the SSL files. Follow the offical guide on the [cerbot website](https://certbot.eff.org/) to
+get the files for the domain.
+
+However, the nginx setup should be changed for permanant redirection to the ssl port, like so:
+
+```
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ritlew.com;
+    return 301 https://ritlew.com$request_uri;
+}
+
+server {
+    # the port your site will be served on
+    listen      443 ssl;
+
+    ssl_certificate     /etc/letsencrypt/live/ritlew.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/keys/0000_key-certbot.pem;
+
+	... rest of file ...
+```
+
