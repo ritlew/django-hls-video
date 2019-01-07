@@ -27,11 +27,14 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['ritlew.com', 'localhost', '127.0.0.1']
 
+APPEND_SLASH = True
 
 # Application definition
 
 INSTALLED_APPS = [
     'home',
+    'blog',
+    'django_summernote',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -40,16 +43,19 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 ]
 
-MIDDLEWARE_CLASSES = [
+MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+SUMMERNOTE_CONFIG = {
+    'attachment_filesize_limit': 15000000
+}
 
 ROOT_URLCONF = 'ritlew.urls'
 
@@ -133,7 +139,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = 'static'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = '../../media'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 if DEBUG:
     import mimetypes

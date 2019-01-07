@@ -11,5 +11,6 @@ urlpatterns = [
     url(r'^favicon\.ico$', favicon_view),
     url(r'^video/$', views.video, name="video"),
     url(r'^music/$', views.music, name="music"),
+    url(r'^blog/', include("blog.urls")),
 ]
 

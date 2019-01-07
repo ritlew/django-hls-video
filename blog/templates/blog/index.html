@@ -1,0 +1,22 @@
+{% extends 'home/index.html' %}
+
+{% block main %}
+    {# blogs are grouped by 3s to display easier #}
+    {% for entry in entries %}
+        <div class="row my-4">
+            {% if entry %}
+                <div class="col-md-12">
+                    <div class="card bg-primary mb-12">
+                        <div class="card-header">{{ entry.date_created|date:'F j, Y' }}</div>
+                        <div class="card-body">
+                            <a href="{% url 'blog_detail' requested_slug=entry.url_slug %}">
+                                <h4 class="text-white card-title">{{ entry.title }}</h4>
+                            </a>
+                            <p class="card-text">{{ entry.body|striptags|slice:"0:500" }}...</p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    {% endfor %}
+{% endblock %}
