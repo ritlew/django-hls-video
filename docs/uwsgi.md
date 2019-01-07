@@ -102,7 +102,7 @@ Description=uWSGI Emperor service
 After=syslog.target
 
 [Service]
-ExecStart=/usr/bin/uwsgi --emperor /etc/uwsgi/sites
+ExecStart=/usr/local/bin/uwsgi --emperor /etc/uwsgi/sites
 Restart=always
 KillSignal=SIGQUIT
 Type=notify
