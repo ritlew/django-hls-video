@@ -1,0 +1,7 @@
+# files
+db.sqlite3
+
+# folders
+.idea/
+venv/
+media/
