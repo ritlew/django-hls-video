@@ -132,5 +132,12 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = 'static'
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = '../../media'
+
+if DEBUG:
+    import mimetypes
+    mimetypes.add_type("application/dash+xml", ".mpd", True)
+
 if os.environ.get('DJANGO_SETTINGS') == 'production':
     from ritlew.production import *
