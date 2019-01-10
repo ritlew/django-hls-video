@@ -33,6 +33,7 @@ APPEND_SLASH = True
 
 INSTALLED_APPS = [
     'home',
+    'video',
     'blog',
     'django_summernote',
     'django.contrib.admin',

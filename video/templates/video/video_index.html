@@ -3,8 +3,7 @@
 {% load staticfiles %}
 
 {% block head %}
-    <script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script>
-    {# <script src="{% static 'home/js/dash.all.min.js' %}"></script> #}
+    <script src="{% static 'home/js/dash.all.min.js' %}"></script>
     <style>
         html, body {
             height: 100%;
@@ -20,8 +19,8 @@
     <div class="row my-4">
         <div class="col-md-12">
             <div align="center" class="embed-responsive embed-responsive-16by9">
-                <video id="video-player" class="embed-responsive-item" data-dashjs-player autoplay
-                       src="{% static 'home/video/video.mpd' %}" controls></video>
+                <video id="video-player" class="embed-responsive-item" data-dashjs-player
+                       src="{{ MEDIA_URL }}video/deathnote/01_rebirth.mpd" controls></video>
             </div>
         </div>
     </div>
@@ -55,28 +54,19 @@
         <div class="col-md-4 my-2">
             <div class="card bg-primary border-primary">
                 <div class="container">
+                    {% for i in "xx" %}
                     <div class="row my-2">
                         <div class="col-md-12">
                             <div class="card border-primary mb-3">
                                 <div class="card-header">Episode - 22:39</div>
                                 <div class="card-body">
-                                    <img src="{% static 'home/image/deathnote.jpg' %}" class="img-fluid"
+                                    <img src="{{ MEDIA_URL }}video/deathnote.jpg" class="img-fluid"
                                          alt="Responsive image">
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="row my-2">
-                        <div class="col-md-12">
-                            <div class="card border-primary mb-3">
-                                <div class="card-header">Episode - 22:39</div>
-                                <div class="card-body">
-                                    <img src="{% static 'home/image/deathnote.jpg' %}" class="img-fluid"
-                                         alt="Responsive image">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
