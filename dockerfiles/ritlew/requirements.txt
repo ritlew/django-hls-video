@@ -1,0 +1,14 @@
+amqp==2.3.2
+billiard==3.5.0.5
+celery==4.2.1
+Django==2.0.6
+django-summernote==0.8.11.4
+kombu==4.2.2.post1
+pytz==2018.4
+uwsgidecorators==1.1.0
+vine==1.2.0
+git+git://github.com/ouhouhsami/django-progressbarupload.git#egg=django-progressbarupload
+psycopg2-binary
+uwsgi
+redis
+ffmpeg-python

@@ -3,7 +3,11 @@
 {% load staticfiles %}
 
 {% block head %}
-    <script src="{% static 'home/js/dash.all.min.js' %}"></script>
+    <script src="{% static 'video/videojs/video.min.js' %}"></script>
+    <script src="{% static 'video/videojs/videojs-contrib-quality-levels.min.js' %}"></script>
+    <script src="{% static 'video/videojs/videojs-hls-quality-selector.min.js' %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static 'video/videojs/video-js.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'video/videojs/videojs-hls-quality-selector.min.css' %}">
     <style>
         html, body {
             height: 100%;
@@ -18,9 +22,9 @@
 {% block main %}
     <div class="row my-4">
         <div class="col-md-12">
-            <div align="center" class="embed-responsive embed-responsive-16by9">
-                <video id="video-player" class="embed-responsive-item" data-dashjs-player
-                       src="{{ MEDIA_URL }}video/deathnote/01_rebirth.mpd" controls></video>
+            <div align="center" class="embed-responsive">
+                <video-js id="video" class="embed-responseive-item vjs-fluid video-js vjs-default-skin" data-setup={} controls>
+</video-js>
             </div>
         </div>
     </div>
@@ -71,4 +75,15 @@
             </div>
         </div>
     </div>
+<script>
+player = videojs('video');
+player.src({
+src: "{{ MEDIA_URL }}video/test/rebirth.m3u8",
+type: "application/x-mpegURL"
+});
+
+player.hlsQualitySelector();
+
+    player.play();
+</script>
 {% endblock %}
