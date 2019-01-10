@@ -25,7 +25,7 @@ SECRET_KEY = 'r!=@d0n_+2*i$*2o3i@$7yq!0$23v(!w8iz1!_34y-v(7+&x93'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['ritlew.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['ritlew.com', '192.168.1.75', 'localhost', '127.0.0.1']
 
 APPEND_SLASH = True
 
@@ -107,16 +107,6 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-try:
-    import uwsgi
-    from uwsgidecorators import timer
-
-
-    @timer(3)
-    def change_code_gracefull_reload(sig):
-        uwsgi.reload()
-except:
-    pass
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.9/topics/i18n/
