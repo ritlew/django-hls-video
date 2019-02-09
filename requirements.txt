@@ -1,0 +1,5 @@
+Django==2.0.6
+django-summernote==0.8.11.4
+pytz==2018.4
+uwsgidecorators==1.1.0
+uWSGI==2.0.17
