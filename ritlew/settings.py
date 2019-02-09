@@ -25,7 +25,7 @@ SECRET_KEY = 'r!=@d0n_+2*i$*2o3i@$7yq!0$23v(!w8iz1!_34y-v(7+&x93'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['ritlew.com', '192.168.1.75', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['ritlew.com', 'localhost', '127.0.0.1']
 
 APPEND_SLASH = True
 
@@ -33,8 +33,10 @@ APPEND_SLASH = True
 
 INSTALLED_APPS = [
     'home',
+    'video',
     'blog',
     'django_summernote',
+    'progressbarupload',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -52,6 +54,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+FILE_UPLOAD_HANDLERS = {
+    "progressbarupload.uploadhandler.ProgressBarUploadHandler",
+    "django.core.files.uploadhandler.MemoryFileUploadHandler",
+    "django.core.files.uploadhandler.TemporaryFileUploadHandler",
+}
 
 SUMMERNOTE_CONFIG = {
     'attachment_filesize_limit': 15000000
@@ -84,12 +92,14 @@ WSGI_APPLICATION = 'ritlew.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'postgres',
+        'USER': os.environ.get('POSTGRES_USER'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
+        'HOST': 'www_db',
+        'PORT': 5432,
     }
 }
-
-
 # Password validation
 # https://docs.djangoproject.com/en/1.9/ref/settings/#auth-password-validators
 
@@ -126,10 +136,16 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = 'static'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+FILE_UPLOAD_PERMISSIONS = 0o644
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# CELERY
+
+CELERY_BROKER_URL = "redis://www_redis"
 
 if DEBUG:
     import mimetypes

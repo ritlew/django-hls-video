@@ -1,0 +1,59 @@
+version: '3'
+
+volumes:
+    static-content:
+
+services:
+    www_db:
+        image: postgres:11.1-alpine
+        command: postgres -c log_min_error_statement=WARNING
+        user: postgres
+        environment:
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+
+    www_redis:
+        image: redis:5.0.3-alpine
+        command: redis-server --loglevel warning
+        ports:
+            - "6379:6379"
+    www_uwsgi:
+        image: ritlewww
+        build: 
+            context: ./dockerfiles/ritlew
+        user: ${CURRENT_UID}:${CURRENT_GID}
+        command: uwsgi --ini /code/config/uwsgi/sites/ritlew
+        environment:
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+        volumes:
+            - static-content:/code/static
+            - .:/code:Z
+        ports:
+            - "8000:8000"
+        depends_on:
+            - www_db
+            - www_redis
+
+    www_celery:
+        image: ritlewww
+        user: ${CURRENT_UID}:${CURRENT_GID}
+        command: celery -A ritlew worker -l WARNING
+        volumes:
+            - .:/code
+            - ./media:/code/media
+        depends_on:
+            - www_db
+            - www_redis
+
+    www_nginx:
+        image: nginx:1.15.8-alpine
+        ports: 
+            - "8001:80"
+        volumes:
+            - static-content:/static
+            - ./config/nginx/conf.d:/etc/nginx/conf.d
+            - ./media:/media
+        depends_on:
+            - www_uwsgi
+

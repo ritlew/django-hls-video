@@ -1,0 +1,13 @@
+[uwsgi]
+project = ritlew
+base = /code
+
+chdir = %(base)
+module = %(project).wsgi:application
+wsgi-file = ritlew/wsgi.py
+
+master = true
+processes = 5
+
+http-socket = :8000
+vacuum = true

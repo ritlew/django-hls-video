@@ -12,6 +12,6 @@ import os
 from django.core.wsgi import get_wsgi_application
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ritlew.settings")
-os.environ.setdefault("DJANGO_SETTINGS", "production")
+#os.environ.setdefault("DJANGO_SETTINGS", "production")
 
 application = get_wsgi_application()

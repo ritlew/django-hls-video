@@ -1,0 +1,25 @@
+{% extends 'home/index.html' %}
+
+{% load staticfiles %}
+
+{% block head %}
+    <style>
+        html, body {
+            height: 100%;
+        }
+
+        .card {
+            height: 100%;
+        }
+    </style>
+{% endblock %}
+
+{% block main %}
+    <div class="row my-4">
+        <div class="col-md-12">
+            <div align="center" class="embed-responsive embed-responsive-16by9">
+                <video id="video" class="embed-responseive-item vjs-fluid video-js vjs-default-skin" data-setup={} controls></video>
+            </div>
+        </div>
+    </div>
+{% endblock %}

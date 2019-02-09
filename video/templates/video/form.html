@@ -1,0 +1,21 @@
+{% extends 'home/index.html' %}
+
+{% load staticfiles %}
+{% load progress_bar %}
+
+{% block head %}
+    {% progress_bar_media %}
+{% endblock %}
+
+{% block main %}
+<div class="row">
+    <div class="col-12">
+        <form enctype="multipart/form-data" method="post" action="">
+                {% csrf_token %}
+                {{ form }}
+                {% progress_bar %}
+                <input type="submit" />
+         </form>
+    </div>
+</div>
+{% endblock %}
