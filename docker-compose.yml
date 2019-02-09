@@ -14,7 +14,7 @@ services:
 
     www_redis:
         image: redis:5.0.3-alpine
-        command: redis-server --loglevel warning --protected-mode no --appendonly yes
+        command: redis-server --loglevel warning
         ports:
             - "6379:6379"
     www_uwsgi:

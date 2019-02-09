@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 from django.urls import path, include
-=======
-from django.conf.urls import url, include
->>>>>>> dev
 from . import views
 
 

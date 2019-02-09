@@ -3,86 +3,87 @@
 {% load staticfiles %}
 
 {% block head %}
-    <script src="{% static 'video/videojs/video.min.js' %}"></script>
-    <script src="{% static 'video/videojs/videojs-contrib-quality-levels.min.js' %}"></script>
-    <script src="{% static 'video/videojs/videojs-hls-quality-selector.min.js' %}"></script>
-    <link rel="stylesheet" type="text/css" href="{% static 'video/videojs/video-js.min.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'video/videojs/videojs-hls-quality-selector.min.css' %}">
-    <style>
-        html, body {
-            height: 100%;
-        }
+<script src="{% static 'video/videojs/video.min.js' %}"></script>
+<script src="{% static 'video/videojs/videojs-contrib-quality-levels.min.js' %}"></script>
+<script src="{% static 'video/videojs/videojs-hls-quality-selector.min.js' %}"></script>
+<link rel="stylesheet" type="text/css" href="{% static 'video/videojs/video-js.min.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'video/videojs/videojs-hls-quality-selector.min.css' %}">
+<style>
+html, body {
+    height: 100%;
+}
 
         .card {
             height: 100%;
         }
-    </style>
+</style>
 {% endblock %}
 
 {% block main %}
-    <div class="row my-4">
-        <div class="col-md-12">
-            <div align="center" class="embed-responsive">
-                <video-js id="video" class="embed-responseive-item vjs-fluid video-js vjs-default-skin" data-setup={} controls>
-</video-js>
+<div class="row my-4">
+    <div class="col-md-12">
+        <div align="center" class="embed-responsive">
+            <video-js id="video" class="embed-responseive-item vjs-fluid video-js vjs-default-skin" data-setup={} controls>
+            </video-js>
+        </div>
+    </div>
+</div>
+<div class="row my-2">
+    <div class="col-md-8 my-2">
+        <div style="height: auto" class="card text-white bg-primary">
+            <div class="card-header">Death Note</div>
+            <div class="card-body">
+                <h4 class="card-title">Rebirth</h4>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item bg-dark">Length: 22:49</li>
+                    <li class="list-group-item bg-dark">Episode No: 1</li>
+                    <li class="list-group-item bg-dark">Outside the grounds of his high school,
+                        Light Yagami discovers a notebook that claims to be able to kill anyone whose name
+                        and
+                        face is known to its owner. He initially dismisses the so-called "Death Note" as a
+                        hoax,
+                        but, after testing its powers, he discovers that these claims are indeed real. The
+                        original owner, a shinigami named Ryuk, approaches Light and explains that the
+                        notebook
+                        now belongs to him. Since Light is the new owner, he is the only one who can see and
+                        interact with Ryuk. The shinigami also says that when Light's time to die comes,
+                        Ryuk
+                        will be the one to write down his name in his book. Light decides to use the Death
+                        Note's power to rid the world of evil and become the god of a new, peaceful world.
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
-    <div class="row my-2">
-        <div class="col-md-8 my-2">
-            <div style="height: auto" class="card text-white bg-primary">
-                <div class="card-header">Death Note</div>
-                <div class="card-body">
-                    <h4 class="card-title">Rebirth</h4>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item bg-dark">Length: 22:49</li>
-                        <li class="list-group-item bg-dark">Episode No: 1</li>
-                        <li class="list-group-item bg-dark">Outside the grounds of his high school,
-                            Light Yagami discovers a notebook that claims to be able to kill anyone whose name
-                            and
-                            face is known to its owner. He initially dismisses the so-called "Death Note" as a
-                            hoax,
-                            but, after testing its powers, he discovers that these claims are indeed real. The
-                            original owner, a shinigami named Ryuk, approaches Light and explains that the
-                            notebook
-                            now belongs to him. Since Light is the new owner, he is the only one who can see and
-                            interact with Ryuk. The shinigami also says that when Light's time to die comes,
-                            Ryuk
-                            will be the one to write down his name in his book. Light decides to use the Death
-                            Note's power to rid the world of evil and become the god of a new, peaceful world.
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4 my-2">
-            <div class="card bg-primary border-primary">
-                <div class="container">
-                    {% for i in "xx" %}
-                    <div class="row my-2">
-                        <div class="col-md-12">
-                            <div class="card border-primary mb-3">
-                                <div class="card-header">Episode - 22:39</div>
-                                <div class="card-body">
-                                    <img src="{{ MEDIA_URL }}video/deathnote.jpg" class="img-fluid"
-                                         alt="Responsive image">
-                                </div>
+    <div class="col-md-4 my-2">
+        <div class="card bg-primary border-primary">
+            <div class="container">
+                {% for i in "xx" %}
+                <div class="row my-2">
+                    <div class="col-md-12">
+                        <div class="card border-primary mb-3">
+                            <div class="card-header">Episode - 22:39</div>
+                            <div class="card-body">
+                                <img src="{{ MEDIA_URL }}video/deathnote.jpg" class="img-fluid"
+                                                                              alt="Responsive image">
                             </div>
                         </div>
                     </div>
-                    {% endfor %}
                 </div>
+                {% endfor %}
             </div>
         </div>
     </div>
+</div>
 <script>
-player = videojs('video');
-player.src({
-src: "{{ MEDIA_URL }}video/test/rebirth.m3u8",
-type: "application/x-mpegURL"
-});
+    player = videojs('video');
 
-player.hlsQualitySelector();
+    player.src({
+        src: "{{ MEDIA_URL }}video/test/rebirth.m3u8",
+        type: "application/x-mpegURL"
+    });
+
+    player.hlsQualitySelector();
 
     player.play();
 </script>
