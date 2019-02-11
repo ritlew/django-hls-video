@@ -13,4 +13,3 @@ uWSGI==2.0.18
 uwsgidecorators==1.1.0
 vine==1.2.0
 
-git+git://github.com/ouhouhsami/django-progressbarupload.git#egg=django-progressbarupload
