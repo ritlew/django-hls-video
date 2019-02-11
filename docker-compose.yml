@@ -39,6 +39,9 @@ services:
         image: ritlewww
         user: ${CURRENT_UID}:${CURRENT_GID}
         command: celery -A ritlew worker -l WARNING
+        environment:
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
         volumes:
             - .:/code
             - ./media:/code/media

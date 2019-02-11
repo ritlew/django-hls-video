@@ -9,13 +9,17 @@
 <link rel="stylesheet" type="text/css" href="{% static 'video/videojs/video-js.min.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'video/videojs/videojs-hls-quality-selector.min.css' %}">
 <style>
-html, body {
-    height: 100%;
-}
+    html, body {
+        height: 100%;
+    }
 
-        .card {
-            height: 100%;
-        }
+    .card {
+        height: 100%;
+    }
+
+    video {
+        max-height: 100vh;
+    }
 </style>
 {% endblock %}
 
@@ -77,14 +81,15 @@ html, body {
 </div>
 <script>
     player = videojs('video');
+    {% if vid %}
+        player.src({
+            src: "{{ MEDIA_URL }}video/{{ vid.mpd_file }}",
+            type: "application/x-mpegURL"
+        });
 
-    player.src({
-        src: "{{ MEDIA_URL }}video/test/rebirth.m3u8",
-        type: "application/x-mpegURL"
-    });
+        player.hlsQualitySelector();
 
-    player.hlsQualitySelector();
-
-    player.play();
+        player.play();
+    {% endif %}
 </script>
 {% endblock %}

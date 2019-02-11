@@ -1,6 +1,7 @@
-import subprocess
+import json
 import os
-import ffmpeg
+import shlex
+import subprocess
 
 from .models import VideoFile
 from django.conf import settings
@@ -12,99 +13,70 @@ def process_video_file(vid_object_pk):
     vid_object = VideoFile.objects.get(pk=vid_object_pk)
     
     os.chdir(settings.MEDIA_ROOT + "/video")
-    print(os.getcwd())
-    input_file = ffmpeg.input(os.path.basename(vid_object.raw_video_file.name))
-    if not os.path.exists("test"):
-        os.mkdir("test")
 
-    output_processes = [
-        ( # 240p video
-            input_file
-                .output(
-                    "01_rebirth.240.m3u8",
-                    vcodec="h264",
-                    crf=20,
-                    video_bitrate=50000,
-                    bufsize=100000,
-                    vf="scale=-1:240,setdar=16/9",
-                    acodec="aac",
-                    ar=48000,
-                    audio_bitrate=128000,
-                    g=60,
-                    keyint_min=60,
-                    sc_threshold=0,
-                    hls_time=4,
-                    hls_playlist_type="vod",
-                    hls_segment_filename="test/240p%03d.ts",
-                    **{"profile:v": "main"}
+    input_file = os.path.basename(vid_object.raw_video_file.name)
+    folder_name = os.path.splitext(os.path.basename(input_file))[0] + "_" + str(vid_object.pk)
+    if not os.path.exists(folder_name):
+        os.mkdir(folder_name)
+
+    ffprobe_command = "ffprobe -v quiet -print_format json -show_format -show_streams " + input_file
+    prepared_command = shlex.split(ffprobe_command)
+    vid_info = json.loads(subprocess.check_output(prepared_command))
+
+    duration = int(float(vid_info["format"]["duration"]))
+    # safe default 128k
+    audio_bitrate = 128000
+    for stream in vid_info["streams"]:
+        if stream["codec_type"] == "video":
+            DAR = stream["display_aspect_ratio"].replace(":", "/")
+            height = int(stream["height"])
+            if height % 120 != 0:
+                print( "height not evenly divisible by 120")
+        if stream["codec_type"] == "audio":
+            audio_bitrate = stream["bit_rate"]
+
+    command = "ffmpeg -v quiet -i {} -progress - -c:v libx264 -c:a aac -b:a {} ".format(
+                input_file,
+                audio_bitrate
                 )
-                .overwrite_output()
-                .run_async()
-        ),
-        ( # 360p video
-            input_file
-                .output(
-                    "01_rebirth.360.m3u8",
-                    vcodec="h264",
-                    crf=20,
-                    video_bitrate=100000,
-                    bufsize=200000,
-                    vf="scale=-1:360,setdar=16/9",
-                    acodec="aac",
-                    ar=48000,
-                    audio_bitrate=128000,
-                    g=60,
-                    keyint_min=60,
-                    sc_threshold=0,
-                    hls_time=4,
-                    hls_playlist_type="vod",
-                    hls_segment_filename="test/360p_%03d.ts",
-                    **{"profile:v": "main"}
-                )
-                .overwrite_output()
-                .run_async()
-        ),
-        ( # 480p video
-            input_file
-                .output(
-                    "01_rebirth.480.m3u8",
-                    vcodec="h264",
-                    crf=20,
-                    video_bitrate=250000,
-                    bufsize=500000,
-                    vf="scale=-1:480,setdar=16/9",
-                    acodec="aac",
-                    ar=48000,
-                    audio_bitrate=128000,
-                    g=60,
-                    keyint_min=60,
-                    sc_threshold=0,
-                    hls_time=4,
-                    hls_playlist_type="vod",
-                    hls_segment_filename="test/480p_%03d.ts",
-                    **{"profile:v": "main"}
-                )
-                .overwrite_output()
-                .run_async()
-        )
-    ]
+    bitrates = ""
+    filters = "-filter_complex '"
+    maps = ""
+    var_map = "'"
 
-    for process in output_processes:
-        process.wait()
+    resolutions = [240, 360, 480, 720, 1080]
+    for res in resolutions:
+        # don't encode higher than source
+        if res > height:
+            break
+        index = resolutions.index(res)
+        bitrates += "-b:v:{} {}k ".format(index, str(400 + index * 300))
+        filters += "[0:v]scale=-2:{},setdar={}[o{}];".format(res, DAR, res)
+        maps += "-map 0:a:0 -map '[o{}]' ".format(res)
+        var_map += "a:{},v:{} ".format(index, index)
+    filters = filters[:-1] + "' "
+    var_map += "' "
 
-#    p = subprocess.Popen([
-#        "MP4Box", "-dash", "1000", "-rap", "-frag-rap",
-#        "-profile", "onDemand",
-#        "-out", "01_rebirth.mpd", 
-#        "01_rebirth.480.mp4",
-#        "01_rebirth.360.mp4",
-#        "01_rebirth.240.mp4",
-#        "01_rebirth.audio.mp4"
-#    ])
+    command += bitrates + filters + maps + "\
+            -force_key_frames expr:gte(t,n_forced*4) \
+            -f hls -hls_flags single_file -hls_segment_type fmp4  \
+            -hls_playlist_type event -hls_playlist 1 -hls_time 4 \
+            -var_stream_map " + var_map + " -master_pl_name master.m3u8  \
+            " + folder_name + "/%v.m3u8"
 
-#    p.wait()
+    with subprocess.Popen(shlex.split(command), bufsize=1, stdout=subprocess.PIPE) as p:
+        for line in p.stdout:
+            line = line.decode()
+            if "out_time_ms" in line:
+                current = int(int(line[line.find("=")+1:]) / 1000000)
+                print("{}s of {}s, {}%".format(
+                    current,
+                    duration,
+                    int(100 * current / duration)))
 
     vid_object.processed = True
+    vid_object.mpd_file = folder_name + "/master.m3u8"
+    vid_object.raw_video_file.delete()
     vid_object.save()
 
-    return 
+    return folder_name + " completed"

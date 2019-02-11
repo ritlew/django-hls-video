@@ -12,9 +12,9 @@ def video_index(request):
     vid_object = VideoFile.objects.latest('pk')
     
     if not vid_object.processed:
-        process_video_file.delay(vid_object.pk)
+        return render(request, "video/video_index.html")
 
-    return render(request, "video/video_index.html")
+    return render(request, "video/video_index.html", {"vid": vid_object})
 
 def video2(request):
     return render(request, "video/video2.html")
