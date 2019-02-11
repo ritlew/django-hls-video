@@ -19,5 +19,4 @@ WORKDIR /code
 ADD ./requirements.txt /code
 
 RUN pip install -r requirements.txt
-ADD ./progress_bar.js /usr/local/lib/python3.7/site-packages/progressbarupload/static/js/progress_bar.js
 

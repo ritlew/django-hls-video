@@ -36,7 +36,6 @@ INSTALLED_APPS = [
     'video',
     'blog',
     'django_summernote',
-    'progressbarupload',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
