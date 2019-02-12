@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'video',
     'blog',
     'django_summernote',
+    'chunked_upload',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -55,7 +56,6 @@ MIDDLEWARE = [
 ]
 
 FILE_UPLOAD_HANDLERS = {
-    "progressbarupload.uploadhandler.ProgressBarUploadHandler",
     "django.core.files.uploadhandler.MemoryFileUploadHandler",
     "django.core.files.uploadhandler.TemporaryFileUploadHandler",
 }
