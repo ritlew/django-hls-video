@@ -1,12 +1,14 @@
+from django.conf import settings
+
 import json
 import os
 import shlex
 import subprocess
+import time
+from celery import shared_task
 
 from .models import VideoFile
-from django.conf import settings
 
-from celery import shared_task
 
 @shared_task
 def process_video_file(vid_object_pk):
@@ -74,9 +76,26 @@ def process_video_file(vid_object_pk):
                     duration,
                     int(100 * current / duration)))
 
+    thumbnail_command = \
+            "ffmpeg -v quiet -i {} -ss {}.000 -vframes 1 {}".format(
+        input_file,
+        time.strftime("%H:%M:%S", time.gmtime(int(duration / 2))),
+        folder_name + "/thumb.jpg"
+    )
+
+    print("Creating thumbnail")
+
+    with subprocess.Popen(shlex.split(thumbnail_command), bufsize=1, stdout=subprocess.PIPE) as p:
+        for line in p.stdout:
+            line = line.decode()
+            print(line)
+
+    print("Finishing up")
     vid_object.processed = True
+    vid_object.thumbnail = folder_name + "/thumb.jpg"
     vid_object.mpd_file = folder_name + "/master.m3u8"
     vid_object.raw_video_file.delete()
     vid_object.save()
 
-    return folder_name + " completed"
+    print(folder_name + " completed")
+

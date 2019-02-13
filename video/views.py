@@ -11,17 +11,20 @@ from .tasks import process_video_file
 
 
 def video_index(request):
-    vid_object = VideoFile.objects.latest('pk')
+    vids = VideoFile.objects.filter(processed=True).order_by("-pk")[:10]
+    return render(request, "video/index.html", {"videos": vids})
+
+def video_player(request, vid_pk=0):
+    vid_object = VideoFile.objects.get(pk=vid_pk)
     
     if not vid_object.processed:
-        return render(request, "video/video_index.html")
+        return render(request, "video/video_player.html")
 
-    return render(request, "video/video_index.html", {"vid": vid_object})
+    return render(request, "video/video_player.html", {"vid": vid_object})
 
 def form_view(request):
     if request.method == 'POST':
         # stop attempted file upload on this endpoint
-        requset.POST.pop("raw_video_file", None)
         form = UploadModelForm(request.POST)
         if form.is_valid():
             vid = form.save(commit=False)
