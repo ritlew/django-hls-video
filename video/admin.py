@@ -6,7 +6,7 @@ from .models import VideoFile
 
 class VideoFileAdmin(SummernoteModelAdmin):
     summernote_fields = ('description',)
-    exclude = ['mpd_file', 'processed']
+    readonly_fields = ['mpd_file', 'processed']
 
 
 admin.site.register(VideoFile, VideoFileAdmin)
