@@ -12,6 +12,7 @@ class VideoFile(models.Model):
     processed = models.BooleanField(default=False)
     mpd_file = models.FilePathField(default=None, null=True)
     thumbnail = models.FilePathField(default=None, null=True)
+    task_id = models.CharField(max_length=50)
 
     @property
     def preview_text(self):

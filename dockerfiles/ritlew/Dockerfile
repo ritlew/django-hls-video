@@ -1,4 +1,4 @@
-FROM python:3.7.2-alpine
+FROM python:3.6.8-alpine
 ENV PYTHONBUFFERED 1
 
 ARG USER

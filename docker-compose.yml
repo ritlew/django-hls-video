@@ -49,6 +49,23 @@ services:
             - www_db
             - www_redis
 
+
+    www_daphne:
+        image: ritlewww
+        user: ${CURRENT_UID}:${CURRENT_GID}
+        environment:
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+        command: daphne -b 0.0.0.0 -p 8002 ritlew.asgi:application
+        ports:
+            - "8002:8002"
+        volumes:
+            - .:/code
+            - ./media:/code/media
+        depends_on:
+            - www_db
+            - www_redis
+
     www_nginx:
         image: nginx:1.15.8-alpine
         ports: 
@@ -57,6 +74,7 @@ services:
             - static-content:/static
             - ./config/nginx/conf.d:/etc/nginx/conf.d
             - ./media:/media
+            - .:/code
         depends_on:
             - www_uwsgi
 

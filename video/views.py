@@ -64,7 +64,10 @@ class MyChunkedUploadCompleteView(ChunkedUploadCompleteView):
         vid.raw_video_file = uploaded_file
         vid.upload_id = None
         vid.save()
-        process_video_file.delay(vid.pk)
+        t = process_video_file.delay(vid.pk)
+        vid.task_id = t.task_id
+        vid.save()
+
         return JsonResponse({"message": "file upload success"})
         
 

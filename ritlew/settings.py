@@ -25,7 +25,6 @@ SECRET_KEY = 'r!=@d0n_+2*i$*2o3i@$7yq!0$23v(!w8iz1!_34y-v(7+&x93'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['ritlew.com', 'localhost', '127.0.0.1']
 
 APPEND_SLASH = True
 
@@ -37,6 +36,7 @@ INSTALLED_APPS = [
     'blog',
     'django_summernote',
     'chunked_upload',
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -85,6 +85,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ritlew.wsgi.application'
 
+ASGI_APPLICATION = 'ritlew.routing.application'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("www_redis", 6379)],
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/1.9/ref/settings/#databases
@@ -145,6 +155,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # CELERY
 
 CELERY_BROKER_URL = "redis://www_redis"
+CELERY_RESULT_BACKEND = "redis://www_redis"
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_SERIALIZER = 'json'
 
 if DEBUG:
     import mimetypes

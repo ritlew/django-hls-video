@@ -27,7 +27,7 @@
 <div class="row my-4">
     <div class="col-md-12">
         <div align="center">
-            <video-js id="video" class="vjs-fluid video-js vjs-default-skin" data-setup={} controls>
+            <video-js id="video" class="vjs-fluid video-js vjs-default-skin vjs-big-play-centered" data-setup={} controls>
             </video-js>
         </div>
     </div>
@@ -71,6 +71,7 @@
     {% endcomment %}
 </div>
 <script>
+    videojs.options.hls.overrideNative = true;
     player = videojs('video');
     {% if vid %}
         player.src({

@@ -10,10 +10,10 @@ from celery import shared_task
 from .models import VideoFile
 
 
-@shared_task
-def process_video_file(vid_object_pk):
+@shared_task(bind=True)
+def process_video_file(self, vid_object_pk):
     vid_object = VideoFile.objects.get(pk=vid_object_pk)
-    
+
     os.chdir(settings.MEDIA_ROOT + "/video")
 
     input_file = os.path.basename(vid_object.raw_video_file.name)
@@ -26,6 +26,16 @@ def process_video_file(vid_object_pk):
     vid_info = json.loads(subprocess.check_output(prepared_command))
 
     duration = int(float(vid_info["format"]["duration"]))
+
+    thumbnail_command = \
+            "ffmpeg -v quiet -i {} -ss {}.000 -vframes 1 {}".format(
+        input_file,
+        time.strftime("%H:%M:%S", time.gmtime(int(duration / 2))),
+        folder_name + "/thumb.jpg"
+    )
+
+    print("Creating thumbnail")
+    subprocess.Popen(shlex.split(thumbnail_command)).wait()
     # safe default 128k
     audio_bitrate = 128000
     for stream in vid_info["streams"]:
@@ -71,24 +81,19 @@ def process_video_file(vid_object_pk):
             line = line.decode()
             if "out_time_ms" in line:
                 current = int(int(line[line.find("=")+1:]) / 1000000)
+                percent = int(100 * current / duration)
+                self.update_state(
+                    state="PROGRESS",
+                    meta={
+                        "progress": percent
+                    }
+                )
                 print("{}s of {}s, {}%".format(
                     current,
                     duration,
-                    int(100 * current / duration)))
+                    percent
+                ))
 
-    thumbnail_command = \
-            "ffmpeg -v quiet -i {} -ss {}.000 -vframes 1 {}".format(
-        input_file,
-        time.strftime("%H:%M:%S", time.gmtime(int(duration / 2))),
-        folder_name + "/thumb.jpg"
-    )
-
-    print("Creating thumbnail")
-
-    with subprocess.Popen(shlex.split(thumbnail_command), bufsize=1, stdout=subprocess.PIPE) as p:
-        for line in p.stdout:
-            line = line.decode()
-            print(line)
 
     print("Finishing up")
     vid_object.processed = True
