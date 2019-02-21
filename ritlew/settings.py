@@ -152,6 +152,11 @@ FILE_UPLOAD_PERMISSIONS = 0o644
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# DJANGO_SENDFILE
+SENDFILE_BACKEND = 'sendfile.backends.nginx'
+SENDFILE_URL = '/protected'
+SENDFILE_ROOT = os.path.join(MEDIA_ROOT, 'protected')
+
 # CELERY
 
 CELERY_BROKER_URL = "redis://www_redis"

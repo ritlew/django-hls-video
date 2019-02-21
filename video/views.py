@@ -1,9 +1,11 @@
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
+from django.conf import settings
 
 import json
 
 from chunked_upload.views import ChunkedUploadView, ChunkedUploadCompleteView
+from sendfile import sendfile
 
 from .forms import UploadModelForm
 from .models import VideoFile, MyChunkedUpload
@@ -13,6 +15,13 @@ from .tasks import process_video_file
 def video_index(request):
     vids = VideoFile.objects.filter(processed=True).order_by("-pk")[:10]
     return render(request, "video/index.html", {"videos": vids})
+
+def get_video(request, vid_pk):
+    if request.user.is_authenticated:
+        r = sendfile(request, settings.SENDFILE_ROOT + "/p.jpg")
+        return r
+    return HttpResponse("not so ok...")
+
 
 def video_player(request, vid_pk=0):
     vid_object = VideoFile.objects.get(pk=vid_pk)
