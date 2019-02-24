@@ -1,9 +1,7 @@
 FROM python:3.6.8-alpine
 ENV PYTHONBUFFERED 1
 
-ARG USER
-
-RUN apk update && apk add git postgresql-dev linux-headers alpine-sdk coreutils git nasm x264-dev
+RUN apk update && apk add git postgresql-dev linux-headers alpine-sdk coreutils git nasm x264-dev bash
 
 # FFMPEG 4.1 clone and build
 WORKDIR /opt
@@ -15,8 +13,9 @@ RUN ./configure --enable-gpl --enable-libx264 --prefix=/usr && make -j4 && make 
 # django project
 RUN mkdir /code
 WORKDIR /code
-
-ADD ./requirements.txt /code
+COPY requirements.txt /code/requirements.txt
 
 RUN pip install -r requirements.txt
+ 
+COPY . /code/
 

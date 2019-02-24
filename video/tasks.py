@@ -14,7 +14,7 @@ from .models import VideoFile
 def process_video_file(self, vid_object_pk):
     vid_object = VideoFile.objects.get(pk=vid_object_pk)
 
-    os.chdir(settings.MEDIA_ROOT + "/video")
+    os.chdir(settings.SENDFILE_ROOT + "/video")
 
     input_file = os.path.basename(vid_object.raw_video_file.name)
     folder_name = os.path.splitext(os.path.basename(input_file))[0] + "_" + str(vid_object.pk)

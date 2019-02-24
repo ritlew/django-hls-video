@@ -3,6 +3,7 @@ from django.shortcuts import render
 from django.conf import settings
 
 import json
+import os
 
 from chunked_upload.views import ChunkedUploadView, ChunkedUploadCompleteView
 from sendfile import sendfile
@@ -18,7 +19,10 @@ def video_index(request):
 
 def get_video(request, vid_pk):
     if request.user.is_authenticated:
-        r = sendfile(request, settings.SENDFILE_ROOT + "/p.jpg")
+        v = VideoFile.objects.get(pk=vid_pk)
+        print(v.mpd_file)
+        print(os.path.join(settings.SENDFILE_ROOT, v.mpd_file))
+        r = sendfile(request, os.path.join(settings.SENDFILE_ROOT, v.mpd_file))
         return r
     return HttpResponse("not so ok...")
 
