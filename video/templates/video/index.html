@@ -10,7 +10,7 @@
     <a href="/video/play/{{ vid.pk }}/">
         <div class="row my-2">
             <div class="col-4">
-                <img class="img-fluid" src="{{ MEDIA_URL }}video/{{ vid.thumbnail }}">
+                <img class="img-fluid" src="{% url 'getter_file' vid_pk=vid.pk filename=vid.thumbnail %}">
             </div>
             <div class="col-8 bg-primary text-white">
                 <div class="card-header">{{ vid.header }}</div>

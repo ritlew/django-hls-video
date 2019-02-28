@@ -14,10 +14,16 @@ from .models import VideoFile
 def process_video_file(self, vid_object_pk):
     vid_object = VideoFile.objects.get(pk=vid_object_pk)
 
-    os.chdir(settings.SENDFILE_ROOT + "/video")
+    os.chdir(settings.SENDFILE_ROOT)
 
-    input_file = os.path.basename(vid_object.raw_video_file.name)
-    folder_name = os.path.splitext(os.path.basename(input_file))[0] + "_" + str(vid_object.pk)
+    input_file = os.path.join(
+        "video",
+        os.path.basename(vid_object.raw_video_file.name)
+    )
+    folder_name = os.path.join(
+        "video",
+        os.path.splitext(os.path.basename(input_file))[0] + "_" + str(vid_object.pk)
+    )
     if not os.path.exists(folder_name):
         os.mkdir(folder_name)
 
@@ -63,7 +69,7 @@ def process_video_file(self, vid_object_pk):
             break
         index = resolutions.index(res)
         bitrates += "-b:v:{} {}k ".format(index, str(400 + index * 300))
-        filters += "[0:v]scale=-2:{},setdar={}[o{}];".format(res, DAR, res)
+        filters += "[0:v]yadif,scale=-2:{},setdar={}[o{}];".format(res, DAR, res)
         maps += "-map 0:a:0 -map '[o{}]' ".format(res)
         var_map += "a:{},v:{} ".format(index, index)
     filters = filters[:-1] + "' "
@@ -74,7 +80,7 @@ def process_video_file(self, vid_object_pk):
             -f hls -hls_flags single_file -hls_segment_type fmp4  \
             -hls_playlist_type event -hls_playlist 1 -hls_time 4 \
             -var_stream_map " + var_map + " -master_pl_name master.m3u8  \
-            " + folder_name + "/%v.m3u8"
+            " + folder_name + "/%v"
 
     with subprocess.Popen(shlex.split(command), bufsize=1, stdout=subprocess.PIPE) as p:
         for line in p.stdout:
@@ -97,8 +103,9 @@ def process_video_file(self, vid_object_pk):
 
     print("Finishing up")
     vid_object.processed = True
-    vid_object.thumbnail = folder_name + "/thumb.jpg"
-    vid_object.mpd_file = folder_name + "/master.m3u8"
+    vid_object.folder_name = folder_name
+    vid_object.thumbnail = "thumb.jpg"
+    vid_object.mpd_file = "master.m3u8"
     vid_object.raw_video_file.delete()
     vid_object.save()
 

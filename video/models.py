@@ -10,6 +10,7 @@ class VideoFile(models.Model):
     header = models.CharField(max_length=50, null=True)
     description = models.TextField()
     upload_id = models.CharField(max_length=50, null=True)
+    folder_name = models.CharField(max_length=50, null=True)
     raw_video_file = models.FileField(
         upload_to=os.path.join(settings.SENDFILE_REL_PATH, "video/"), 
         null=True

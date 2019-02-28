@@ -17,12 +17,12 @@ def video_index(request):
     vids = VideoFile.objects.filter(processed=True).order_by("-pk")[:10]
     return render(request, "video/index.html", {"videos": vids})
 
-def get_video(request, vid_pk):
+def get_video(request, vid_pk, filename=None):
     if request.user.is_authenticated:
         v = VideoFile.objects.get(pk=vid_pk)
-        print(v.mpd_file)
-        print(os.path.join(settings.SENDFILE_ROOT, v.mpd_file))
-        r = sendfile(request, os.path.join(settings.SENDFILE_ROOT, v.mpd_file))
+        path = os.path.join(settings.SENDFILE_ROOT, v.folder_name, filename)
+        print(path)
+        r = sendfile(request, path)
         return r
     return HttpResponse("not so ok...")
 
