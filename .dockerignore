@@ -1,6 +1,10 @@
 db.sqlite3
+dup.sh
 
 __pycache__/
 venv/
 .git/
 .idea/
+media/
+dockerfiles/
+scripts/

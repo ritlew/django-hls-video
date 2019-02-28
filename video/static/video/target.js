@@ -1,3 +1,5 @@
+var proSocket = null;
+var intervalID = null;
 $(document).ready(function() {
     var first = true;
     var csrf = $("input[name='csrfmiddlewaretoken']")[0].value;
@@ -43,7 +45,20 @@ $(document).ready(function() {
                 },
                 dataType: "json",
                 success: function(data) {
-                    console.log(data);
+                    proSocket = new WebSocket("ws://" + window.location.host + "/ws/test/");
+                    proSocket.onmessage = function(e){
+                        console.log(e.data);
+                        data = $.parseJSON(e.data);
+                        $("#processing_progress").css("width", data.progress + "%");
+                        if (data.progress >= 100 || proSocket.readyState != 1){
+                            clearInterval(intervalID);
+                        }
+                    };
+                    intervalID = setInterval(function(){
+                        if (proSocket.readyState == 1){
+                            proSocket.send(JSON.stringify({"test": ""}));
+                        }
+                    }, 500);
                 }
             });
         },

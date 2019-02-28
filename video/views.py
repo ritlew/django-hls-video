@@ -1,9 +1,12 @@
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
+from django.conf import settings
 
 import json
+import os
 
 from chunked_upload.views import ChunkedUploadView, ChunkedUploadCompleteView
+from sendfile import sendfile
 
 from .forms import UploadModelForm
 from .models import VideoFile, MyChunkedUpload
@@ -11,17 +14,30 @@ from .tasks import process_video_file
 
 
 def video_index(request):
-    vid_object = VideoFile.objects.latest('pk')
+    vids = VideoFile.objects.filter(processed=True).order_by("-pk")[:10]
+    return render(request, "video/index.html", {"videos": vids})
+
+def get_video(request, vid_pk, filename=None):
+    if request.user.is_authenticated:
+        v = VideoFile.objects.get(pk=vid_pk)
+        path = os.path.join(settings.SENDFILE_ROOT, v.folder_name, filename)
+        print(path)
+        r = sendfile(request, path)
+        return r
+    return HttpResponse("not so ok...")
+
+
+def video_player(request, vid_pk=0):
+    vid_object = VideoFile.objects.get(pk=vid_pk)
     
     if not vid_object.processed:
-        return render(request, "video/video_index.html")
+        return render(request, "video/video_player.html")
 
-    return render(request, "video/video_index.html", {"vid": vid_object})
+    return render(request, "video/video_player.html", {"vid": vid_object})
 
 def form_view(request):
     if request.method == 'POST':
         # stop attempted file upload on this endpoint
-        requset.POST.pop("raw_video_file", None)
         form = UploadModelForm(request.POST)
         if form.is_valid():
             vid = form.save(commit=False)
@@ -61,7 +77,10 @@ class MyChunkedUploadCompleteView(ChunkedUploadCompleteView):
         vid.raw_video_file = uploaded_file
         vid.upload_id = None
         vid.save()
-        process_video_file.delay(vid.pk)
+        t = process_video_file.delay(vid.pk)
+        vid.task_id = t.task_id
+        vid.save()
+
         return JsonResponse({"message": "file upload success"})
         
 

@@ -19,7 +19,7 @@ class UploadModelForm(forms.ModelForm):
 
     class Meta:
         model = VideoFile
-        exclude = ['upload_id', 'processed', 'mpd_file']
+        exclude = ['task_id', 'thumbnail', 'upload_id', 'processed', 'mpd_file', 'folder_name']
         labels = {
             "raw_video_file": "Video File"
         }

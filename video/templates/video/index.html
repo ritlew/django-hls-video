@@ -1,0 +1,28 @@
+{% extends 'home/index.html' %}
+
+{% load staticfiles %}
+
+{% block head %}
+{% endblock %}
+
+{% block main %}
+    {% for vid in videos %}
+    <a href="/video/play/{{ vid.pk }}/">
+        <div class="row my-2">
+            <div class="col-4">
+                <img class="img-fluid" src="{% url 'getter_file' vid_pk=vid.pk filename=vid.thumbnail %}">
+            </div>
+            <div class="col-8 bg-primary text-white">
+                <div class="card-header">{{ vid.header }}</div>
+                <div class="card text-white bg-primary mb-3">
+                    <div class="card-body">
+                        <h4 class="card-title">{{ vid.title }}</h4>
+                        <p class="card-text">{{ vid.preview_text }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+{% endblock %}
+

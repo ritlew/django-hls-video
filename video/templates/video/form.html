@@ -7,6 +7,11 @@
     <script src="{% static 'video/jquery_fileupload/jquery.fileupload.js' %}"></script>
     <script src="{% static 'video/jquery_fileupload/jquery.fileupload-ui.js' %}"></script>
     <script src="{% static 'video/target.js' %}"></script>
+<style>
+#processing-progress{
+    transition: width .5s linear;
+}
+</style>
 {% endblock %}
 
 {% block main %}
@@ -24,6 +29,9 @@
                 {% endfor %}
                 <div class="form-group row progress">
                     <div id="upload_progress" class="progress-bar bg-info" role="progressbar" style="width: 0%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <div class="form-group row progress">
+                    <div id="processing_progress" class="progress-bar bg-info" role="progressbar" style="width: 0%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
                 <div class="row">
                     <input id="KILLMENOW" class="btn btn-primary" type="submit" />

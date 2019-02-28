@@ -17,8 +17,8 @@
         height: 100%;
     }
 
-    video {
-        max-height: 100vh;
+    video-js:fullscreen {
+        padding: 0 !important;
     }
 </style>
 {% endblock %}
@@ -26,39 +26,29 @@
 {% block main %}
 <div class="row my-4">
     <div class="col-md-12">
-        <div align="center" class="embed-responsive">
-            <video-js id="video" class="embed-responseive-item vjs-fluid video-js vjs-default-skin" data-setup={} controls>
+        <div align="center">
+            <video-js id="video" class="vjs-fluid video-js vjs-default-skin vjs-big-play-centered" data-setup={} controls>
             </video-js>
         </div>
     </div>
 </div>
 <div class="row my-2">
-    <div class="col-md-8 my-2">
+    <div class="col-md-12 my-2">
         <div style="height: auto" class="card text-white bg-primary">
-            <div class="card-header">Death Note</div>
+            <div class="card-header">{{ vid.header }}</div>
             <div class="card-body">
-                <h4 class="card-title">Rebirth</h4>
+                <h4 class="card-title">{{ vid.title }}</h4>
                 <ul class="list-group list-group-flush">
-                    <li class="list-group-item bg-dark">Length: 22:49</li>
-                    <li class="list-group-item bg-dark">Episode No: 1</li>
-                    <li class="list-group-item bg-dark">Outside the grounds of his high school,
-                        Light Yagami discovers a notebook that claims to be able to kill anyone whose name
-                        and
-                        face is known to its owner. He initially dismisses the so-called "Death Note" as a
-                        hoax,
-                        but, after testing its powers, he discovers that these claims are indeed real. The
-                        original owner, a shinigami named Ryuk, approaches Light and explains that the
-                        notebook
-                        now belongs to him. Since Light is the new owner, he is the only one who can see and
-                        interact with Ryuk. The shinigami also says that when Light's time to die comes,
-                        Ryuk
-                        will be the one to write down his name in his book. Light decides to use the Death
-                        Note's power to rid the world of evil and become the god of a new, peaceful world.
+                    {# <li class="list-group-item bg-dark">Length: 22:49</li> #}
+                    {# <li class="list-group-item bg-dark">Episode No: 1</li> #}
+                    <li class="list-group-item bg-dark">
+                        {{ vid.description }}
                     </li>
                 </ul>
             </div>
         </div>
     </div>
+    {% comment %}
     <div class="col-md-4 my-2">
         <div class="card bg-primary border-primary">
             <div class="container">
@@ -78,12 +68,14 @@
             </div>
         </div>
     </div>
+    {% endcomment %}
 </div>
 <script>
+    videojs.options.hls.overrideNative = true;
     player = videojs('video');
     {% if vid %}
         player.src({
-            src: "{{ MEDIA_URL }}video/{{ vid.mpd_file }}",
+            src: "{% url 'getter_file' vid_pk=vid.pk filename=vid.mpd_file %}",
             type: "application/x-mpegURL"
         });
 

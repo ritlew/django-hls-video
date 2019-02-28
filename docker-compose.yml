@@ -4,59 +4,74 @@ volumes:
     static-content:
 
 services:
-    www_db:
+    db:
         image: postgres:11.1-alpine
         command: postgres -c log_min_error_statement=WARNING
         user: postgres
         environment:
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASSWORD}
-
-    www_redis:
+    redis:
         image: redis:5.0.3-alpine
         command: redis-server --loglevel warning
+        sysctls:
+            net.core.somaxconn: '511'
         ports:
             - "6379:6379"
-    www_uwsgi:
+    uwsgi:
         image: ritlewww
         build: 
-            context: ./dockerfiles/ritlew
-        user: ${CURRENT_UID}:${CURRENT_GID}
+            context: .
+            dockerfile: dockerfiles/uwsgi.dockerfile
         command: uwsgi --ini /code/config/uwsgi/sites/ritlew
         environment:
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASSWORD}
+            PROD: ${UWSGI_PROD}
+            SECRET_KEY: ${SECRET_KEY}
         volumes:
             - static-content:/code/static
-            - .:/code:Z
+            - ${MEDIA_PATH}:/code/media
         ports:
             - "8000:8000"
         depends_on:
-            - www_db
-            - www_redis
-
-    www_celery:
+            - db
+            - redis
+    celery:
         image: ritlewww
-        user: ${CURRENT_UID}:${CURRENT_GID}
         command: celery -A ritlew worker -l WARNING
         environment:
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASSWORD}
+            SECRET_KEY: ${SECRET_KEY}
         volumes:
-            - .:/code
-            - ./media:/code/media
+            - ${MEDIA_PATH}:/code/media
         depends_on:
-            - www_db
-            - www_redis
-
-    www_nginx:
+            - db
+            - redis
+    daphne:
+        image: ritlewww
+        environment:
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+            SECRET_KEY: ${SECRET_KEY}
+        command: daphne -b 0.0.0.0 -p 8002 ritlew.asgi:application
+        ports:
+            - "8002:8002"
+        volumes:
+            - ${MEDIA_PATH}:/code/media
+        depends_on:
+            - db
+            - redis
+    nginx:
         image: nginx:1.15.8-alpine
         ports: 
             - "8001:80"
         volumes:
             - static-content:/static
             - ./config/nginx/conf.d:/etc/nginx/conf.d
-            - ./media:/media
+            - ${MEDIA_PATH}:/media
         depends_on:
-            - www_uwsgi
+            - daphne
+            - uwsgi
 
