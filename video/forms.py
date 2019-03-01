@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import VideoFile
+from .models import VideoUpload
 
 
 class UploadModelForm(forms.ModelForm):
@@ -10,17 +10,17 @@ class UploadModelForm(forms.ModelForm):
         # bootstrap css on all fields
         for field in iter(self.fields):
             self.fields[field].widget.attrs.update({
-                "class": "form-control"
+                'class': 'form-control'
             })
-        self.fields["raw_video_file"].widget.attrs.update({
-            "class": "form-control-file"
+        self.fields['raw_video_file'].widget.attrs.update({
+            'class': 'form-control-file'
         })
-        self.fields["raw_video_file"].required = False
+        self.fields['raw_video_file'].required = False
 
     class Meta:
-        model = VideoFile
-        exclude = ['task_id', 'thumbnail', 'upload_id', 'processed', 'mpd_file', 'folder_name']
+        model = VideoUpload
+        exclude = ['slug', 'processed', 'folder_name', 'master_playlist', 'thumbnail', 'upload_id', 'task_id']
         labels = {
-            "raw_video_file": "Video File"
+            'raw_video_file': 'Video File'
         }
 

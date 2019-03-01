@@ -7,10 +7,10 @@
 
 {% block main %}
     {% for vid in videos %}
-    <a href="/video/play/{{ vid.pk }}/">
+    <a href="/video/play/{{ vid.slug }}/">
         <div class="row my-2">
             <div class="col-4">
-                <img class="img-fluid" src="{% url 'getter_file' vid_pk=vid.pk filename=vid.thumbnail %}">
+                <img class="img-fluid" src="{% url 'getter_file' video_slug=vid.slug filetype='thumbnail' %}">
             </div>
             <div class="col-8 bg-primary text-white">
                 <div class="card-header">{{ vid.header }}</div>

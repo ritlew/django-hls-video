@@ -16,4 +16,5 @@ django-chunked-upload==1.1.3
 channels==2.1.7
 channels_redis
 django-sendfile
+django-autoslug
 

@@ -7,22 +7,22 @@ import subprocess
 import time
 from celery import shared_task
 
-from .models import VideoFile
+from .models import VideoUpload, VideoVariant, RESOLUTIONS
 
 
 @shared_task(bind=True)
-def process_video_file(self, vid_object_pk):
-    vid_object = VideoFile.objects.get(pk=vid_object_pk)
+def process_video_file(self, upload_pk):
+    upload = VideoUpload.objects.get(pk=upload_pk)
 
     os.chdir(settings.SENDFILE_ROOT)
 
     input_file = os.path.join(
         "video",
-        os.path.basename(vid_object.raw_video_file.name)
+        os.path.basename(upload.raw_video_file.name)
     )
     folder_name = os.path.join(
         "video",
-        os.path.splitext(os.path.basename(input_file))[0] + "_" + str(vid_object.pk)
+        os.path.splitext(os.path.basename(input_file))[0] + "_" + str(upload.pk)
     )
     if not os.path.exists(folder_name):
         os.mkdir(folder_name)
@@ -62,16 +62,21 @@ def process_video_file(self, vid_object_pk):
     maps = ""
     var_map = "'"
 
-    resolutions = [240, 360, 480, 720, 1080]
-    for res in resolutions:
+    for i, res in enumerate(RESOLUTIONS):
         # don't encode higher than source
         if res > height:
             break
-        index = resolutions.index(res)
-        bitrates += "-b:v:{} {}k ".format(index, str(400 + index * 300))
+        bitrates += "-b:v:{} {}k ".format(i, str(400 + i * 300))
         filters += "[0:v]yadif,scale=-2:{},setdar={}[o{}];".format(res, DAR, res)
         maps += "-map 0:a:0 -map '[o{}]' ".format(res)
-        var_map += "a:{},v:{} ".format(index, index)
+        var_map += "a:{},v:{} ".format(i, i)
+        variant = VideoVariant(
+            master=upload,
+            playlist_file=os.path.join(folder_name, str(i)),
+            video_file=os.path.join(folder_name, f"{i}.m4s"),
+            resolution=i
+        )
+        variant.save()
     filters = filters[:-1] + "' "
     var_map += "' "
 
@@ -86,28 +91,29 @@ def process_video_file(self, vid_object_pk):
         for line in p.stdout:
             line = line.decode()
             if "out_time_ms" in line:
-                current = int(int(line[line.find("=")+1:]) / 1000000)
-                percent = int(100 * current / duration)
+                current = int(line[line.find("=")+1:]) / 1000000
+                percent = 100 * current / duration
                 self.update_state(
                     state="PROGRESS",
                     meta={
-                        "progress": percent
+                        "progress": round(percent, 2),
+                        "current": int(current),
+                        "total": duration
                     }
                 )
                 print("{}s of {}s, {}%".format(
-                    current,
+                    int(current),
                     duration,
                     percent
                 ))
 
 
     print("Finishing up")
-    vid_object.processed = True
-    vid_object.folder_name = folder_name
-    vid_object.thumbnail = "thumb.jpg"
-    vid_object.mpd_file = "master.m3u8"
-    vid_object.raw_video_file.delete()
-    vid_object.save()
+    upload.processed = True
+    upload.thumbnail = os.path.join(folder_name, "thumb.jpg")
+    upload.master_playlist = os.path.join(folder_name, "master.m3u8")
+    upload.raw_video_file.delete()
+    upload.save()
 
     print(folder_name + " completed")
 

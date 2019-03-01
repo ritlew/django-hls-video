@@ -49,6 +49,7 @@ $(document).ready(function() {
                     proSocket.onmessage = function(e){
                         console.log(e.data);
                         data = $.parseJSON(e.data);
+                        $("#processing_progress").html("Encoded " + data.current + "s of " + data.total + "s");
                         $("#processing_progress").css("width", data.progress + "%");
                         if (data.progress >= 100 || proSocket.readyState != 1){
                             clearInterval(intervalID);

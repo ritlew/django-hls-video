@@ -9,26 +9,35 @@ from chunked_upload.views import ChunkedUploadView, ChunkedUploadCompleteView
 from sendfile import sendfile
 
 from .forms import UploadModelForm
-from .models import VideoFile, MyChunkedUpload
+from .models import VideoUpload, MyChunkedUpload
 from .tasks import process_video_file
 
 
 def video_index(request):
-    vids = VideoFile.objects.filter(processed=True).order_by("-pk")[:10]
+    vids = VideoUpload.objects.filter(processed=True).order_by("-pk")[:10]
     return render(request, "video/index.html", {"videos": vids})
 
-def get_video(request, vid_pk, filename=None):
+def get_video(request, video_slug, filetype):
     if request.user.is_authenticated:
-        v = VideoFile.objects.get(pk=vid_pk)
-        path = os.path.join(settings.SENDFILE_ROOT, v.folder_name, filename)
-        print(path)
+        v = VideoUpload.objects.get(slug=video_slug)
+        switcher = {
+            "thumbnail": v.thumbnail.name,
+            "video": v.master_playlist.name,
+        }
+        filename = switcher.get(filetype, None)
+        if not filename:
+            if "m4s" in filetype:
+                filename = v.variants.get(resolution=os.path.splitext(filetype)[0]).video_file.name
+            else:
+                filename = v.variants.get(resolution=filetype).playlist_file.name
+        path = os.path.join(settings.SENDFILE_ROOT, filename)
         r = sendfile(request, path)
         return r
     return HttpResponse("not so ok...")
 
 
-def video_player(request, vid_pk=0):
-    vid_object = VideoFile.objects.get(pk=vid_pk)
+def video_player(request, video_slug):
+    vid_object = VideoUpload.objects.get(slug=video_slug)
     
     if not vid_object.processed:
         return render(request, "video/video_player.html")
@@ -73,7 +82,7 @@ class MyChunkedUploadCompleteView(ChunkedUploadCompleteView):
         # SomeModel.objects.create(user=request.user, file=uploaded_file)
         # * Pass it as an argument to a function:
         # function_that_process_file(uploaded_file)
-        vid = VideoFile.objects.get(upload_id=request.POST.get("upload_id"))
+        vid = VideoUpload.objects.get(upload_id=request.POST.get("upload_id"))
         vid.raw_video_file = uploaded_file
         vid.upload_id = None
         vid.save()

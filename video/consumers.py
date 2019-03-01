@@ -2,7 +2,7 @@ from channels.generic.websocket import WebsocketConsumer
 from celery.result import AsyncResult
 import json
 
-from .models import VideoFile
+from .models import VideoUpload
 
 class TestConsumer(WebsocketConsumer):
     def connect(self):
@@ -12,7 +12,7 @@ class TestConsumer(WebsocketConsumer):
         pass
 
     def receive(self, text_data):
-        res = AsyncResult(VideoFile.objects.latest('pk').task_id)
+        res = AsyncResult(VideoUpload.objects.latest('pk').task_id)
         text_data_json = json.loads(text_data)
         data = res.info
         if res.ready():

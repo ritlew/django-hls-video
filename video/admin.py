@@ -1,12 +1,13 @@
 from django.contrib import admin
 from django_summernote.admin import SummernoteModelAdmin
 
-from .models import VideoFile
+from .models import VideoUpload, VideoVariant
 
 
-class VideoFileAdmin(SummernoteModelAdmin):
+class VideoUploadAdmin(SummernoteModelAdmin):
     summernote_fields = ('description',)
-    readonly_fields = ['mpd_file', 'processed']
+    readonly_fields = ['slug', 'processed', 'master_playlist', 'thumbnail', 'upload_id', 'task_id']
 
 
-admin.site.register(VideoFile, VideoFileAdmin)
+admin.site.register(VideoUpload, VideoUploadAdmin)
+admin.site.register(VideoVariant)
