@@ -12,10 +12,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
+ALLOWED_HOSTS = ["127.0.0.1", "ritlew.com"]
+
 if os.environ.get("PROD"):
-    DEBUG = True
-else:
     DEBUG = False
+else:
+    DEBUG = True
 
 INSTALLED_APPS = [
     'home',
@@ -23,6 +25,7 @@ INSTALLED_APPS = [
     'blog',
     'django_summernote',
     'chunked_upload',
+    'autoslug',
     'channels',
     'django.contrib.admin',
     'django.contrib.auth',

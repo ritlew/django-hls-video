@@ -75,7 +75,7 @@
     player = videojs('video');
     {% if vid %}
         player.src({
-            src: "{% url 'getter_file' vid_pk=vid.pk filename=vid.mpd_file %}",
+            src: "{% url 'getter_file' video_slug=vid.slug filetype='video' %}",
             type: "application/x-mpegURL"
         });
 
