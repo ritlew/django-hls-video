@@ -8,7 +8,7 @@ $(document).ready(function() {
         url: "/video/api/chunked_upload/",
         dataType: "json",
         replaceFileInput: false,
-        maxChunkSize: 10000000, // 1 MB
+        maxChunkSize: 1000000, // 1 MB
         formData: [{"name": "csrfmiddlewaretoken", "value": csrf}],
         add: function (e, data) {
             $("#KILLMENOW").click(function () {
@@ -45,7 +45,7 @@ $(document).ready(function() {
                 },
                 dataType: "json",
                 success: function(data) {
-                    proSocket = new WebSocket("ws://" + window.location.host + "/ws/test/");
+                    proSocket = new WebSocket("wss://" + window.location.host + "/ws/test/");
                     proSocket.onmessage = function(e){
                         console.log(e.data);
                         data = $.parseJSON(e.data);

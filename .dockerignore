@@ -8,3 +8,4 @@ venv/
 media/
 dockerfiles/
 scripts/
+web_db/

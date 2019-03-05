@@ -42,34 +42,31 @@ def process_video_file(self, upload_pk):
 
     print("Creating thumbnail")
     subprocess.Popen(shlex.split(thumbnail_command)).wait()
-    # safe default 128k
-    audio_bitrate = 128000
     for stream in vid_info["streams"]:
         if stream["codec_type"] == "video":
             DAR = stream["display_aspect_ratio"].replace(":", "/")
             height = int(stream["height"])
             if height % 120 != 0:
                 print( "height not evenly divisible by 120")
-        if stream["codec_type"] == "audio":
-            audio_bitrate = stream["bit_rate"]
 
-    command = "ffmpeg -v quiet -i {} -progress - -c:v libx264 -c:a aac -b:a {} ".format(
+    command = "ffmpeg -v quiet -i {} -progress - -c:a aac -ac 2 -c:v libx264 -crf 20 ".format(
                 input_file,
-                audio_bitrate
                 )
     bitrates = ""
     filters = "-filter_complex '"
     maps = ""
     var_map = "'"
 
+    BITRATES = [350, 700, 1200, 2500, 5000]
     for i, res in enumerate(RESOLUTIONS):
         # don't encode higher than source
         if res > height:
             break
-        bitrates += "-b:v:{} {}k ".format(i, str(400 + i * 300))
-        filters += "[0:v]yadif,scale=-2:{},setdar={}[o{}];".format(res, DAR, res)
-        maps += "-map 0:a:0 -map '[o{}]' ".format(res)
-        var_map += "a:{},v:{} ".format(i, i)
+        bitrates += "-b:v:{} {}k ".format(i, BITRATES[i])
+        filters += "[0:v]scale=-2:{},setdar={}[o{}];".format(res, DAR, res)
+        #filters += "[0:v]yadif,scale=-2:{},setdar={}[o{}];".format(res, DAR, res)
+        maps += "-map '[o{}]' ".format(res)
+        var_map += "v:{},agroup:aud ".format(i, i)
         variant = VideoVariant(
             master=upload,
             playlist_file=os.path.join(folder_name, str(i)),
@@ -78,7 +75,8 @@ def process_video_file(self, upload_pk):
         )
         variant.save()
     filters = filters[:-1] + "' "
-    var_map += "' "
+    maps += "-map 0:a:0"
+    var_map += "a:0,agroup:aud'"
 
     command += bitrates + filters + maps + "\
             -force_key_frames expr:gte(t,n_forced*4) \
@@ -107,6 +105,27 @@ def process_video_file(self, upload_pk):
                     percent
                 ))
 
+    skip = False
+    with open(os.path.join(folder_name, "master.m3u8"), "r") as master_playlist_file:
+        lines = master_playlist_file.readlines()
+    with open(os.path.join(folder_name, "master.m3u8"), "w") as master_playlist_file:
+        for line in lines:
+            print(line)
+            if skip:
+                skip = False
+                continue
+            if "\"mp4a.40.2\"" not in line:
+                print(line)
+                master_playlist_file.write(line)
+            else:
+                skip = True
+    variant = VideoVariant(
+        master=upload,
+        playlist_file=os.path.join(folder_name, "5"),
+        video_file=os.path.join(folder_name, "5.m4s"),
+        resolution=5
+    )
+    variant.save()
 
     print("Finishing up")
     upload.processed = True

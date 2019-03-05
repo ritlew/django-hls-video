@@ -17,6 +17,12 @@ def video_index(request):
     vids = VideoUpload.objects.filter(processed=True).order_by("-pk")[:10]
     return render(request, "video/index.html", {"videos": vids})
 
+def process_video(request, vid_pk):
+    vid = VideoUpload.objects.get(pk=vid_pk)
+    process_video_file.delay(vid.pk)
+    return HttpResponse("ok")
+
+
 def get_video(request, video_slug, filetype):
     if request.user.is_authenticated:
         v = VideoUpload.objects.get(slug=video_slug)
