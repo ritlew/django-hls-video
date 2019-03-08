@@ -1,16 +1,19 @@
-from django.conf import settings
-
 import json
+import m3u8
 import os
 import shlex
 import subprocess
 import time
-from time import strftime, gmtime
+
 from celery import shared_task
 from celery.result import allow_join_result
+from django.conf import settings
 from django.db import transaction
+from itertools import filterfalse
+from time import strftime, gmtime
 
 from .models import VideoUpload, Video, VideoVariant, RESOLUTIONS
+
 
 @shared_task(bind=True)
 def setup_video_processing(self, video_pk):
@@ -48,6 +51,7 @@ def setup_video_processing(self, video_pk):
 
     return
 
+
 @shared_task(bind=True)
 def create_thumbnail(self, video_pk):
     # get the upload object
@@ -72,6 +76,7 @@ def create_thumbnail(self, video_pk):
         video.save()
 
     return
+
 
 @shared_task(bind=True)
 def create_variants(self, video_pk):
@@ -172,20 +177,12 @@ def create_variants(self, video_pk):
                 # because one component isn't working quite right
                 print(f'{current}s of {duration}s, {percent}%')
 
-    # ugly code to fix master m3u8 that will be replaced later
-    skip = False
-    with open(os.path.join(video.folder_path, 'master.m3u8'), 'r') as master_playlist_file:
-        lines = master_playlist_file.readlines()
-    with open(os.path.join(video.folder_path, 'master.m3u8'), 'w') as master_playlist_file:
-        for line in lines:
-            if skip:
-                skip = False
-                continue
-            if '"mp4a.40.2"' not in line:
-                master_playlist_file.write(line)
-            else:
-                skip = True
-
+    # remove audio-only variants from master playlist
+    # as they won't play with videojs
+    master_playlist_filepath = os.path.join(video.folder_path, master.m3u8)
+    master = m3u8.load(master_playlist_filepath)
+    master.playlists[:] = filterfalse(lambda x: x.stream_info.codecs == 'mp4a.40.2', master.playlists)
+    master.dump(master_playlist_filepath)
 
     with transaction.atomic():
         video = Video.objects.get(pk=video_pk)
