@@ -10,4 +10,5 @@ urlpatterns = [
     path('form/', views.form_view, name="video_form"),
     path('api/chunked_upload/', views.MyChunkedUploadView.as_view(), name='api_chunked_upload'),
     path('api/chunked_upload_complete/', views.MyChunkedUploadCompleteView.as_view(), name='api_chunked_upload_complete'),
+    path('api/colleciton_autocomplete/', views.CollectionAutocomplete.as_view(create_field='title'), name='api_collection_autocomplete'),
 ]

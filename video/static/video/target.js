@@ -47,7 +47,7 @@ $(document).ready(function() {
                 },
                 dataType: "json",
                 success: function(data) {
-                    proSocket = new WebSocket("ws://" + window.location.host + "/ws/test/");
+                    proSocket = new WebSocket(WEBSOCKET_PROTOCOL + window.location.host + "/ws/test/");
                     proSocket.onmessage = function(e){
                         console.log(e.data);
                         data = $.parseJSON(e.data);

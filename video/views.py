@@ -9,9 +9,10 @@ import os
 from chunked_upload.views import ChunkedUploadView, ChunkedUploadCompleteView
 from sendfile import sendfile
 from celery import group
+from dal import autocomplete
 
 from .forms import UploadModelForm
-from .models import VideoUpload, Video, MyChunkedUpload
+from .models import Video, VideoCollection, VideoUpload, MyChunkedUpload
 from .tasks import setup_video_processing, create_thumbnail, create_variants
 
 
@@ -63,7 +64,25 @@ def form_view(request):
             return JsonResponse({"message": "ok"})
     else:
         form = UploadModelForm()
-    return render(request, 'video/form.html', {'form': form})
+    return render(request, 'video/form.html', {
+        'form': form, 
+        'websocket_protocol': settings.WEBSOCKET_PROTOCOL
+    })
+
+
+# https://django-autocomplete-light.readthedocs.io/en/master/tutorial.html
+class CollectionAutocomplete(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return VideoCollection.objects.none()
+
+        qs = VideoCollection.objects.all()
+
+        if self.q:
+            qs = qs.filter(title__istartswith=self.q)
+
+        return qs
+
 
 class MyChunkedUploadView(ChunkedUploadView):
 

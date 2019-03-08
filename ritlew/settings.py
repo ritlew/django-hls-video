@@ -16,8 +16,10 @@ ALLOWED_HOSTS = ["localhost", "daphne", "127.0.0.1", "ritlew.com"]
 
 if os.environ.get("PROD"):
     DEBUG = False
+    WEBSOCKET_PROTOCOL = "wss://"
 else:
     DEBUG = True
+    WEBSOCKET_PROTOCOL = "ws://"
 
 INSTALLED_APPS = [
     'home',
@@ -27,6 +29,8 @@ INSTALLED_APPS = [
     'chunked_upload',
     'autoslug',
     'channels',
+    'dal',
+    'dal_select2',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
