@@ -98,7 +98,7 @@ class MyChunkedUploadCompleteView(ChunkedUploadCompleteView):
         vid.save()
 
         processing_tasks = (
-            setup_video_processing.s(vid_upload.pk, vid.pk) |
+            setup_video_processing.s(vid.pk) |
             group(
                 create_thumbnail.si(vid.pk),
                 create_variants.si(vid.pk)
