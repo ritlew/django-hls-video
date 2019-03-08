@@ -13,7 +13,7 @@ RESOLUTIONS = [240, 360, 480, 720, 1080]
 
 class VideoCollection(models.Model):
     title = models.CharField(max_length=50)
-    description = models.CharField(max_length=50)
+    description = models.CharField(max_length=50, null=True)
 
     def __str__(self):
         return self.title

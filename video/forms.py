@@ -1,4 +1,5 @@
 from django import forms
+from dal import autocomplete
 
 from .models import VideoUpload
 
@@ -12,15 +13,24 @@ class UploadModelForm(forms.ModelForm):
             self.fields[field].widget.attrs.update({
                 'class': 'form-control'
             })
+
         self.fields['raw_video_file'].widget.attrs.update({
             'class': 'form-control-file'
         })
+        self.fields['collection'].widget.attrs.update({
+            'data-theme': 'bootstrap',
+        })
         self.fields['raw_video_file'].required = False
+
 
     class Meta:
         model = VideoUpload
-        exclude = ['slug', 'processed', 'folder_name', 'master_playlist', 'thumbnail', 'upload_id', 'task_id']
+        exclude = ['upload_id']
         labels = {
             'raw_video_file': 'Video File'
         }
+        widgets = {
+            'collection': autocomplete.ModelSelect2(url='api_collection_autocomplete')
+        }
+
 

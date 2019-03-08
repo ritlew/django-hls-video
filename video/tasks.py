@@ -179,7 +179,7 @@ def create_variants(self, video_pk):
 
     # remove audio-only variants from master playlist
     # as they won't play with videojs
-    master_playlist_filepath = os.path.join(video.folder_path, master.m3u8)
+    master_playlist_filepath = os.path.join(video.folder_path, 'master.m3u8')
     master = m3u8.load(master_playlist_filepath)
     master.playlists[:] = filterfalse(lambda x: x.stream_info.codecs == 'mp4a.40.2', master.playlists)
     master.dump(master_playlist_filepath)
