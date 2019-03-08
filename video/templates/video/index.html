@@ -13,11 +13,11 @@
                 <img class="img-fluid" src="{% url 'getter_file' video_slug=vid.slug filetype='thumbnail' %}">
             </div>
             <div class="col-8 bg-primary text-white">
-                <div class="card-header">{{ vid.header }}</div>
+                <div class="card-header">{{ vid.upload.collection }}</div>
                 <div class="card text-white bg-primary mb-3">
                     <div class="card-body">
-                        <h4 class="card-title">{{ vid.title }}</h4>
-                        <p class="card-text">{{ vid.preview_text }}</p>
+                        <h4 class="card-title">{{ vid.upload.title }}</h4>
+                        <p class="card-text">{{ vid.upload.description }}</p>
                     </div>
                 </div>
             </div>

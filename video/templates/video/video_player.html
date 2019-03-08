@@ -7,7 +7,7 @@
 <script src="{% static 'video/videojs/videojs-contrib-quality-levels.min.js' %}"></script>
 <script src="{% static 'video/videojs/videojs-hls-quality-selector.min.js' %}"></script>
 <link rel="stylesheet" type="text/css" href="{% static 'video/videojs/video-js.min.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'video/videojs/videojs-hls-quality-selector.min.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'video/videojs/videojs-hls-quality-selector.css' %}">
 <style>
     html, body {
         height: 100%;
@@ -27,7 +27,7 @@
 <div class="row my-4">
     <div class="col-md-12">
         <div align="center">
-            <video-js id="video" class="vjs-fluid video-js vjs-default-skin vjs-big-play-centered" data-setup={} controls>
+            <video-js id="video" class="vjs-fluid video-js vjs-default-skin vjs-big-play-centered" controls>
             </video-js>
         </div>
     </div>
@@ -35,14 +35,14 @@
 <div class="row my-2">
     <div class="col-md-12 my-2">
         <div style="height: auto" class="card text-white bg-primary">
-            <div class="card-header">{{ vid.header }}</div>
+            <div class="card-header">{{ vid.upload.collection }}</div>
             <div class="card-body">
-                <h4 class="card-title">{{ vid.title }}</h4>
+                <h4 class="card-title">{{ vid.upload.title }}</h4>
                 <ul class="list-group list-group-flush">
                     {# <li class="list-group-item bg-dark">Length: 22:49</li> #}
                     {# <li class="list-group-item bg-dark">Episode No: 1</li> #}
                     <li class="list-group-item bg-dark">
-                        {{ vid.description }}
+                        {{ vid.upload.description }}
                     </li>
                 </ul>
             </div>
@@ -71,8 +71,18 @@
     {% endcomment %}
 </div>
 <script>
-    videojs.options.hls.overrideNative = true;
-    player = videojs('video');
+$(window).ready(function(){
+var options = {
+    html5: {
+        hls: {
+            overrideNative: true,
+        },
+        nativeAudioTracks: false,
+        nativeVideoTracks: false,
+    }
+};
+
+    player = videojs('video', options);
     {% if vid %}
         player.src({
             src: "{% url 'getter_file' video_slug=vid.slug filetype='video' %}",
@@ -83,5 +93,6 @@
 
         player.play();
     {% endif %}
+	});
 </script>
 {% endblock %}

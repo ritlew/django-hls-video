@@ -1,7 +1,7 @@
-from django.conf.urls import url
+from django.urls import path
 
 from . import consumers
 
 websocket_urlpatterns = [
-    url(r'^ws/test/$', consumers.TestConsumer),
+    path('ws/test/', consumers.TestConsumer),
 ]
