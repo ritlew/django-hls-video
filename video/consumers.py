@@ -1,8 +1,8 @@
 from channels.generic.websocket import WebsocketConsumer
-from celery.result import AsyncResult
+from celery.result import GroupResult
 import json
 
-from .models import VideoUpload
+from .models import Video
 
 class TestConsumer(WebsocketConsumer):
     def connect(self):
@@ -12,11 +12,20 @@ class TestConsumer(WebsocketConsumer):
         pass
 
     def receive(self, text_data):
-        res = AsyncResult(VideoUpload.objects.latest('pk').task_id)
         text_data_json = json.loads(text_data)
-        data = res.info
-        if res.ready():
-            data = {"progress": 100}
+        group_res = GroupResult.restore(
+            Video.objects.get(upload__upload_id=text_data_json["upload_id"]).processing_id
+        )
+        
+        data = {}
+        for res in group_res.results:
+            if res.info:
+                data = res.info
+
+        if group_res.ready():
+            data = {
+                'progress': 100,
+            }
 
         self.send(text_data=json.dumps(data))
 

@@ -35,14 +35,14 @@
 <div class="row my-2">
     <div class="col-md-12 my-2">
         <div style="height: auto" class="card text-white bg-primary">
-            <div class="card-header">{{ vid.header }}</div>
+            <div class="card-header">{{ vid.upload.collection }}</div>
             <div class="card-body">
-                <h4 class="card-title">{{ vid.title }}</h4>
+                <h4 class="card-title">{{ vid.upload.title }}</h4>
                 <ul class="list-group list-group-flush">
                     {# <li class="list-group-item bg-dark">Length: 22:49</li> #}
                     {# <li class="list-group-item bg-dark">Episode No: 1</li> #}
                     <li class="list-group-item bg-dark">
-                        {{ vid.description }}
+                        {{ vid.upload.description }}
                     </li>
                 </ul>
             </div>
