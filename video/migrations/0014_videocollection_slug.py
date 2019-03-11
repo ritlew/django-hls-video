@@ -6,7 +6,7 @@ from django.utils.text import slugify
 
 
 class Migration(migrations.Migration):
-    def forwards_func(apps, schema_editor):
+    def forward_func(apps, schema_editor):
         VideoCollection = apps.get_model("video", "VideoCollection")
         for instance in VideoCollection.objects.all():
             if not instance.slug:

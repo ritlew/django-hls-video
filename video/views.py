@@ -154,8 +154,6 @@ class MyChunkedUploadCompleteView(ChunkedUploadCompleteView):
 
     def on_completion(self, uploaded_file, request):
         vid_upload = VideoUpload.objects.get(upload_id=request.POST.get("upload_id"))
-        vid_upload.raw_video_file = uploaded_file
-        vid_upload.save()
 
         vid = Video(
             upload=vid_upload,
