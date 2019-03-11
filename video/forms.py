@@ -17,7 +17,7 @@ class UploadModelForm(forms.ModelForm):
         self.fields['raw_video_file'].widget.attrs.update({
             'class': 'form-control-file'
         })
-        self.fields['collection'].widget.attrs.update({
+        self.fields['collections'].widget.attrs.update({
             'data-theme': 'bootstrap',
         })
         self.fields['raw_video_file'].required = False
@@ -30,7 +30,7 @@ class UploadModelForm(forms.ModelForm):
             'raw_video_file': 'Video File'
         }
         widgets = {
-            'collection': autocomplete.ModelSelect2(url='api_collection_autocomplete')
+            'collections': autocomplete.ModelSelect2Multiple(url='api_collection_autocomplete')
         }
 
 

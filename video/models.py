@@ -14,6 +14,7 @@ RESOLUTIONS = [240, 360, 480, 720, 1080]
 class VideoCollection(models.Model):
     title = models.CharField(max_length=50)
     description = models.CharField(max_length=50, null=True)
+    slug = AutoSlugField(populate_from='title', unique=True)
 
     def __str__(self):
         return self.title
@@ -23,13 +24,12 @@ class VideoUpload(models.Model):
     # form elements
     title = models.CharField(max_length=50)
     description = models.TextField()
-    collection = models.ForeignKey(VideoCollection, on_delete=models.CASCADE, related_name='videos')
+    collections = models.ManyToManyField(VideoCollection, related_name='videos')
     raw_video_file = models.FileField(
         null=True, # required for chunked upload
         upload_to=os.path.join(settings.SENDFILE_REL_PATH, 'video/')
     )
     upload_id = models.CharField(max_length=50, null=True)
-
 
 class Video(models.Model):
     upload = models.OneToOneField(VideoUpload, on_delete=models.CASCADE)
