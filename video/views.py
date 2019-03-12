@@ -45,6 +45,8 @@ def video_index(request, collection=None):
     return render(request, "video/index.html", {
         "videos": vids,
         "page_range": page_range,
+        "search": collection,
+        "collections": VideoCollection.objects.all(),
     })
 
 def process_video(request, vid_pk):

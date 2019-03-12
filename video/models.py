@@ -5,8 +5,9 @@ from chunked_upload.models import ChunkedUpload
 from autoslug import AutoSlugField
 from celery import group
 
-import os
 import json
+import os
+import time
 
 RESOLUTIONS = [240, 360, 480, 720, 1080]
 
@@ -48,6 +49,13 @@ class Video(models.Model):
     @property
     def vid_info(self):
         return json.loads(self.vid_info_str)
+
+    @property
+    def play_time(self):
+        duration = int(float(self.vid_info['format']['duration']))
+        play_time_format = "%-H:%M:%S" if duration >= (60 * 60) else "%-M:%S"
+        return time.strftime(play_time_format,  time.gmtime(duration))
+
 
 class VideoVariant(models.Model):
     master = models.ForeignKey(Video, on_delete=models.CASCADE, related_name='variants')

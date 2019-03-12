@@ -11,87 +11,117 @@
 {% endblock %}
 
 {% block main %}
-{# Video upload button #}
-<div class="row my-2">
-    <div class="col-4"></div>
-    <div class="col-4 text-center">
-        <a href="{% url 'video_form' %}" class="btn btn-primary">Upload video</a>
+<div class="jumbotron py-4 mb-2">
+    <div class="container text-center">
+        <h1>Videos</h1>      
     </div>
-    <div class="col-4"></div>
 </div>
-
-{# display videos #}
-{% for vid in videos %}
-<div class="row my-2">
-    <div class="col-4">
-        <a href="{% url 'video_player' video_slug=vid.slug %}">
-            <img class="img-fluid" src="{% url 'getter_file' video_slug=vid.slug filetype='thumbnail' %}">
-        </a>
-    </div>
-    <div class="col-8 bg-primary text-white">
-        <div class="card-header">
-            {% for c in vid.upload.collections.all %}
-            <a href="{% url 'video_index' collection=c.slug %}">
-                <span class="badge badge-pill badge-secondary badge-large-text">{{ c.title }}</span>
+<div class="row mt-2">
+    {# sidebar #}
+    <div class="col-lg-2">
+        {# Video upload button #}
+        <div class="text-center">
+            <a href="{% url 'video_form' %}" class="btn btn-primary mw-100">Upload video</a>
+        </div>
+        {# collections nav #}
+        <div class="list-group sticky-top py-3">
+            <a class="list-group-item list-group-item-action active">
+                Collections
             </a>
+            {% for c in collections %}
+            {% if search == c.slug %}
+            <a href="{% url 'video_index' collection=c.slug %}" 
+               class="list-group-item list-group-item-action bg-info text-white">
+                {{ c.title }}
+            </a>
+            {% else %}
+            <a href="{% url 'video_index' collection=c.slug %}" 
+               class="list-group-item list-group-item-action">
+                {{ c.title }}
+            </a>
+            {% endif %}
             {% endfor %}
         </div>
-        <a href="{% url 'video_player' video_slug=vid.slug %}">
-            <div class="card text-white bg-primary">
-                <div class="card-body">
-                    <h4 class="card-title">{{ vid.upload.title }}</h4>
-                    <p class="card-text">{{ vid.upload.description }}</p>
+    </div>
+
+    {# display videos #}
+    <div class="col-lg-10">
+        {% for vid in videos %}
+        <div class="row">
+            {% for i in i|rjust:20 %}
+            <div class="col-lg-6 mb-2">
+                <a href="{% url 'video_player' video_slug=vid.slug %}">
+                    <img class="img-fluid" src="{% url 'getter_file' video_slug=vid.slug filetype='thumbnail' %}">
+                </a>
+                <div class="text-white mb-1">
+                    <div class="row align-items-center bg-dark h-25 py-2 mx-0">
+                        {% for c in vid.upload.collections.all %}
+                        <a class="col-auto" href="{% url 'video_index' collection=c.slug %}">
+                            <span class="badge badge-pill badge-secondary badge-large-text">{{ c.title }}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    <a href="{% url 'video_player' video_slug=vid.slug %}">
+                        <div class="row text-white bg-primary h-75 mx-0">
+                            <div class="card-body pt-2 pb-0">
+                                <h4 class="card-title text-truncate"><bold>{{ vid.upload.title }}</bold> - {{ vid.play_time }}</h4>
+                                <p class="text-truncate">{{ vid.upload.description }}</p>
+                            </div>
+                        </div>
+                    </a>
                 </div>
             </div>
-        </a>
+            {% endfor %}
+        </div>
+        {% endfor %}
+
+        {# pagination #}
+        <div class="row">
+            <div class="col-12">
+                <nav>
+                    <ul class="pagination justify-content-center">
+                        {# Previous / First links #}
+                        <li class="page-item {{ videos.has_previous|yesno:",disabled" }}">
+                            <a class="page-link" href="?page=1">First</a>
+                        </li>
+                        <li class="page-item {{ videos.has_previous|yesno:",disabled" }}">
+                            {% if videos.has_previous %}
+                            <a class="page-link" href="?page={{ videos.previous_page_number }}">Previous</a>
+                            {% else %}
+                            <a class="page-link" href="?page=1">Previous</a>
+                            {% endif %}
+                        </li>
+
+                        {# Current pages #}
+                        {# https://stackoverflow.com/questions/30864011/display-only-some-of-the-page-numbers-by-django-pagination #}
+                        {% for pg in page_range %}
+                        <li class="page-item">
+                            {% if videos.number == pg %}
+                            <a href="?page={{ pg }}" class="page-link bg-info text-white">{{ pg }}</a>
+                            {% else %}
+                            <a href="?page={{ pg }}" class="page-link">{{ pg }}</a>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+
+                        {# next / last links #}
+                        <li class="page-item {{ videos.has_next|yesno:",disabled" }}">
+                            {% if videos.has_next %}
+                            <a class="page-link" href="?page={{ videos.next_page_number }}">Next</a>
+                            {% else %}
+                            <a class="page-link" href="?page={{ videos.paginator.num_pages }}">Next</a>
+                            {% endif %}
+                        </li>
+                        <li class="page-item {{ videos.has_next|yesno:",disabled" }}">
+                            <a class="page-link" href="?page={{ videos.paginator.num_pages }}">Last</a>
+                        </li>
+                        </span>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        {% endblock %}
     </div>
 </div>
-{% endfor %}
 
-{# pagination #}
-<div class="row">
-    <div class="col-12">
-        <nav>
-            <ul class="pagination justify-content-center">
-                {# Previous / First links #}
-                <li class="page-item {{ videos.has_previous|yesno:",disabled" }}">
-                    <a class="page-link" href="?page=1">First</a>
-                    <li class="page-item {{ videos.has_previous|yesno:",disabled" }}">
-                        {% if videos.has_previous %}
-                        <a class="page-link" href="?page={{ videos.previous_page_number }}">Previous</a>
-                        {% else %}
-                        <a class="page-link" href="?page=1">Previous</a>
-                        {% endif %}
-                    </li>
-
-                    {# Current pages #}
-                    {# https://stackoverflow.com/questions/30864011/display-only-some-of-the-page-numbers-by-django-pagination #}
-                    {% for pg in page_range %}
-                    {% if videos.number == pg %}
-                    <li class="page-item active">
-                        <a href="?page={{ pg }}" class="page-link">{{ pg }}</a>
-                    </li>
-                    {% else %}
-                    <li class="page-item">
-                        <a href="?page={{ pg }}" class="page-link">{{ pg }}</a>
-                    </li>
-                    {% endif %}
-                    {% endfor %}
-
-                    {# next / last links #}
-                    <li class="page-item {{ videos.has_next|yesno:",disabled" }}">
-                        {% if videos.has_next %}
-                        <a class="page-link" href="?page={{ videos.next_page_number }}">Next</a>
-                        {% else %}
-                        <a class="page-link" href="?page={{ videos.paginator.num_pages }}">Next</a>
-                        {% endif %}
-                    </li>
-                    <li class="page-item {{ videos.has_next|yesno:",disabled" }}">
-                        <a class="page-link" href="?page={{ videos.paginator.num_pages }}">Last</a>
-                    </li>
-                    </span>
-        </nav>
-    </div>
-</div>
-{% endblock %}
 
