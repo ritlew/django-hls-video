@@ -29,7 +29,7 @@ def video_index(request, collection=None):
         vid_results = Video.objects.filter(processed=True).order_by("-pk")
 
     # pagination
-    paginator = Paginator(vid_results, 2)
+    paginator = Paginator(vid_results, 6)
 
     page = request.GET.get('page', 1)
     vids = paginator.get_page(page)
