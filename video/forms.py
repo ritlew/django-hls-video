@@ -3,10 +3,18 @@ from dal import autocomplete
 
 from .models import VideoUpload
 
+TRUE_FALSE_CHOICES = (
+    (False, "No"),
+    (True, "Yes"),
+)
 
 class UploadModelForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.fields['public'] = forms.ChoiceField(
+            choices=TRUE_FALSE_CHOICES
+        )
 
         # bootstrap css on all fields
         for field in iter(self.fields):

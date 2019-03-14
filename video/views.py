@@ -159,6 +159,7 @@ class MyChunkedUploadCompleteView(ChunkedUploadCompleteView):
 
         vid = Video(
             upload=vid_upload,
+            user=request.user,
             processed=False,
             master_playlist=None,
             thumbnail=None

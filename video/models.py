@@ -26,6 +26,7 @@ class VideoUpload(models.Model):
     title = models.CharField(max_length=50)
     description = models.TextField()
     collections = models.ManyToManyField(VideoCollection, related_name='videos')
+    public = models.BooleanField(default=False)
     raw_video_file = models.FileField(
         null=True, # required for chunked upload
         upload_to=os.path.join(settings.SENDFILE_REL_PATH, 'video/')
@@ -34,6 +35,7 @@ class VideoUpload(models.Model):
 
 class Video(models.Model):
     upload = models.OneToOneField(VideoUpload, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     vid_info_str = models.TextField(null=True)
     folder_path = models.CharField(max_length=100, null=True)
     slug = AutoSlugField(populate_from='title', unique=True)
@@ -66,5 +68,4 @@ class VideoVariant(models.Model):
 
 class MyChunkedUpload(ChunkedUpload):
     pass
-MyChunkedUpload._meta.get_field('user').null = True
 
