@@ -21,8 +21,6 @@ services:
         command: redis-server --loglevel warning
         sysctls:
             net.core.somaxconn: '511'
-        ports:
-            - "6379:6379"
         restart: always
     uwsgi:
         image: ritlewww
@@ -56,6 +54,15 @@ services:
         depends_on:
             - db
             - redis
+        restart: always
+    flower:
+        image: mher/flower
+        command: flower --broker=redis://redis:6379/0 --port=8888 --url-prefix=flower
+        ports:
+            - "8888:8888"
+        depends_on:
+            - redis
+            - celery
         restart: always
     daphne:
         image: ritlewww

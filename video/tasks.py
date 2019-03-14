@@ -171,7 +171,7 @@ def create_variants(self, video_pk):
 
                 # update the result for user
                 self.update_state(
-                    state='PROGRESS',
+                    state="P" + str(int(percent)),
                     meta={
                         'progress': round(percent, 2),
                         'current': int(current),

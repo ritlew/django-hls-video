@@ -29,15 +29,21 @@ else:
     WEBSOCKET_PROTOCOL = "ws://"
 
 INSTALLED_APPS = [
+    # apps
     'home',
     'video',
     'blog',
-    'django_summernote',
-    'chunked_upload',
+
+    # third-party
     'autoslug',
     'channels',
+    'chunked_upload',
     'dal',
     'dal_select2',
+    'django_summernote',
+    'flower',
+
+    #django
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
