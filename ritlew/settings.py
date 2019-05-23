@@ -12,7 +12,14 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
-ALLOWED_HOSTS = ["localhost", "daphne", "127.0.0.1", "ritlew.com"]
+ALLOWED_HOSTS = [
+    # local
+    'localhost', '127.0.0.1',  '192.168.1.70',
+    # other containers
+    'daphne',
+    # domain
+    'ritlew.com'
+]
 
 if os.environ.get("PROD"):
     DEBUG = False
@@ -22,15 +29,21 @@ else:
     WEBSOCKET_PROTOCOL = "ws://"
 
 INSTALLED_APPS = [
+    # apps
     'home',
     'video',
     'blog',
-    'django_summernote',
-    'chunked_upload',
+
+    # third-party
     'autoslug',
     'channels',
+    'chunked_upload',
     'dal',
     'dal_select2',
+    'django_summernote',
+    'flower',
+
+    #django
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

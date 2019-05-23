@@ -5,8 +5,9 @@ from chunked_upload.models import ChunkedUpload
 from autoslug import AutoSlugField
 from celery import group
 
-import os
 import json
+import os
+import time
 
 RESOLUTIONS = [240, 360, 480, 720, 1080]
 
@@ -14,6 +15,7 @@ RESOLUTIONS = [240, 360, 480, 720, 1080]
 class VideoCollection(models.Model):
     title = models.CharField(max_length=50)
     description = models.CharField(max_length=50, null=True)
+    slug = AutoSlugField(populate_from='title', unique=True)
 
     def __str__(self):
         return self.title
@@ -23,16 +25,17 @@ class VideoUpload(models.Model):
     # form elements
     title = models.CharField(max_length=50)
     description = models.TextField()
-    collection = models.ForeignKey(VideoCollection, on_delete=models.CASCADE, related_name='videos')
+    collections = models.ManyToManyField(VideoCollection, related_name='videos')
+    public = models.BooleanField(default=False)
     raw_video_file = models.FileField(
         null=True, # required for chunked upload
         upload_to=os.path.join(settings.SENDFILE_REL_PATH, 'video/')
     )
     upload_id = models.CharField(max_length=50, null=True)
 
-
 class Video(models.Model):
     upload = models.OneToOneField(VideoUpload, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     vid_info_str = models.TextField(null=True)
     folder_path = models.CharField(max_length=100, null=True)
     slug = AutoSlugField(populate_from='title', unique=True)
@@ -49,6 +52,13 @@ class Video(models.Model):
     def vid_info(self):
         return json.loads(self.vid_info_str)
 
+    @property
+    def play_time(self):
+        duration = int(float(self.vid_info['format']['duration']))
+        play_time_format = "%-H:%M:%S" if duration >= (60 * 60) else "%-M:%S"
+        return time.strftime(play_time_format,  time.gmtime(duration))
+
+
 class VideoVariant(models.Model):
     master = models.ForeignKey(Video, on_delete=models.CASCADE, related_name='variants')
     playlist_file = models.FileField()
@@ -58,5 +68,4 @@ class VideoVariant(models.Model):
 
 class MyChunkedUpload(ChunkedUpload):
     pass
-MyChunkedUpload._meta.get_field('user').null = True
 
