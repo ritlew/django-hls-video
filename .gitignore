@@ -1,5 +1,6 @@
 # files
 db.sqlite3
+.env
 
 # folders
 .idea/

@@ -13,9 +13,10 @@ RUN ./configure --enable-gpl --enable-libx264 --prefix=/usr && make -j4 && make 
 # django project
 RUN mkdir /code
 WORKDIR /code
-COPY requirements.txt /code/requirements.txt
+COPY app/requirements.txt /code/requirements.txt
 
 RUN pip install -r requirements.txt
  
-COPY . /code/
+COPY ./app/ /code/
+COPY ./config/uwsgi/sites/django-hls-video /code/
 

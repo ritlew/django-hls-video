@@ -23,11 +23,11 @@ services:
             net.core.somaxconn: '511'
         restart: always
     uwsgi:
-        image: ritlewww
+        image: dhv_app
         build: 
             context: .
             dockerfile: dockerfiles/uwsgi.dockerfile
-        command: uwsgi --ini /code/config/uwsgi/sites/ritlew
+        command: bash -c "python manage.py collectstatic --noinput && python manage.py migrate && uwsgi --ini /code/django-hls-video"
         environment:
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -36,15 +36,13 @@ services:
         volumes:
             - static-content:/code/static
             - ${MEDIA_PATH}:/code/media
-        ports:
-            - "8000:8000"
         depends_on:
             - db
             - redis
         restart: always
     celery:
-        image: ritlewww
-        command: celery -A ritlew worker -l WARNING
+        image: dhv_app
+        command: celery -A django_hls_video worker -l WARNING
         environment:
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -58,21 +56,17 @@ services:
     flower:
         image: mher/flower
         command: flower --broker=redis://redis:6379/0 --port=8888 --url-prefix=flower
-        ports:
-            - "8888:8888"
         depends_on:
             - redis
             - celery
         restart: always
     daphne:
-        image: ritlewww
+        image: dhv_app
         environment:
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASSWORD}
             SECRET_KEY: ${SECRET_KEY}
-        command: daphne -b 0.0.0.0 -p 8002 ritlew.asgi:application
-        ports:
-            - "8002:8002"
+        command: daphne -b 0.0.0.0 -p 8002 django_hls_video.asgi:application
         volumes:
             - ${MEDIA_PATH}:/code/media
         depends_on:

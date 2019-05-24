@@ -1,10 +1,10 @@
 [uwsgi]
-project = ritlew
+project = django_hls_video
 base = /code
 
 chdir = %(base)
 module = %(project).wsgi:application
-wsgi-file = ritlew/wsgi.py
+wsgi-file = django_hls_video/wsgi.py
 
 master = true
 processes = 5
