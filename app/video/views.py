@@ -28,6 +28,9 @@ def video_index(request, collection=None):
     else:
         vid_results = Video.objects.filter(processed=True).order_by("-pk")
 
+    if not request.user.is_authenticated:
+        vid_results = vid_results.filter(upload__public=True)
+
     # pagination
     paginator = Paginator(vid_results, 6)
 
@@ -77,22 +80,25 @@ def process_video(request, vid_pk):
 
 
 def get_video(request, video_slug, filetype):
-    if request.user.is_authenticated:
-        v = Video.objects.get(slug=video_slug)
-        switcher = {
-            "thumbnail": v.thumbnail.name,
-            "video": v.master_playlist.name,
-        }
-        filename = switcher.get(filetype, None)
-        if not filename:
-            if "m4s" in filetype:
-                filename = v.variants.get(resolution=os.path.splitext(filetype)[0]).video_file.name
-            else:
-                filename = v.variants.get(resolution=os.path.splitext(filetype)[0]).playlist_file.name
-        path = os.path.join(settings.MEDIA_ROOT, filename)
-        r = sendfile(request, path)
-        return r
-    return HttpResponse("not so ok...")
+    v = Video.objects.get(slug=video_slug)
+
+    switcher = {
+        "thumbnail": v.thumbnail.name,
+        "video": v.master_playlist.name,
+    }
+    filename = switcher.get(filetype, None)
+
+    if not filename:
+        if "m4s" in filetype:
+            filename = v.variants.get(resolution=os.path.splitext(filetype)[0]).video_file.name
+        else:
+            filename = v.variants.get(resolution=os.path.splitext(filetype)[0]).playlist_file.name
+
+    path = os.path.join(settings.MEDIA_ROOT, filename)
+
+    r = sendfile(request, path)
+
+    return r
 
 
 def video_player(request, video_slug):
@@ -104,6 +110,9 @@ def video_player(request, video_slug):
     return render(request, "video/video_player.html", {"vid": vid_object})
 
 def form_view(request):
+    if not request.user.is_authenticated:
+        return Http404()
+
     if request.method == 'POST':
         # stop attempted file upload on this endpoint
         form = UploadModelForm(request.POST)

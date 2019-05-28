@@ -6,7 +6,7 @@ $(document).ready(function() {
     var csrf = $("input[name='csrfmiddlewaretoken']")[0].value;
     /* https://github.com/juliomalegria/django-chunked-upload-demo/blob/master/templates/chunked_upload_demo.html */
     $("#chunked_upload").fileupload({
-        url: "/video/api/chunked_upload/",
+        url: "/api/chunked_upload/",
         dataType: "json",
         replaceFileInput: false,
         maxChunkSize: 1000000, // 1 MB
@@ -40,7 +40,7 @@ $(document).ready(function() {
         done: function (e, data) { // Called when the file has completely uploaded
             $.ajax({
                 type: "POST",
-                url: "/video/api/chunked_upload_complete/",
+                url: "/api/chunked_upload_complete/",
                 data: {
                     csrfmiddlewaretoken: csrf,
                     upload_id: data.result.upload_id,

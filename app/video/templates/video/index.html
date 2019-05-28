@@ -20,10 +20,13 @@
     {# sidebar #}
     <div class="col-lg-2">
         {# Video upload button #}
+        {% if request.user.is_staff or request.user.is_superuser %}
         <div class="text-center">
             <a href="{% url 'video_form' %}" class="btn btn-primary mw-100">Upload video</a>
         </div>
+        {% endif %}
         {# collections nav #}
+        {% if collections %}
         <div class="list-group sticky-top py-3">
             <a class="list-group-item list-group-item-action active">
                 Collections
@@ -42,6 +45,7 @@
             {% endif %}
             {% endfor %}
         </div>
+        {% endif %}
     </div>
 
     {# display videos #}
@@ -74,6 +78,7 @@
         </div>
 
         {# pagination #}
+        {% if videos %}
         <div class="row">
             <div class="col-12">
                 <nav>
@@ -118,6 +123,7 @@
                 </nav>
             </div>
         </div>
+        {% endif %}
         {% endblock %}
     </div>
 </div>
