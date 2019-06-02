@@ -30,6 +30,10 @@ def video_index(request, collection=None):
 
     if not request.user.is_authenticated:
         vid_results = vid_results.filter(upload__public=True)
+        collection_pks = vid_results.values_list('upload__collections', flat=True)
+        collections = VideoCollection.objects.filter(id__in=collection_pks)
+    else:
+        collections = VideoCollection.objects.all()
 
     # pagination
     paginator = Paginator(vid_results, 6)
@@ -49,7 +53,7 @@ def video_index(request, collection=None):
         "videos": vids,
         "page_range": page_range,
         "search": collection,
-        "collections": VideoCollection.objects.all(),
+        "collections": collections,
     })
 
 def process_video(request, vid_pk):
