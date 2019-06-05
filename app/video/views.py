@@ -2,9 +2,10 @@
 from django.conf import settings
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.http import HttpResponse, JsonResponse, Http404
+from django.http import HttpResponse, JsonResponse, Http404, Http405
 from django.shortcuts import render
 from django.views.generic.list import ListView
+from django.views.generic.detail import DetailView
 
 # Python standard imports
 import json
@@ -56,6 +57,13 @@ class VideoListView(ListView):
         context['search'] = collection_request
         return context
 
+
+class VideoPlayerView(DetailView):
+    model = Video
+    queryset = Video.objects.filter(processed=True)
+    template_name = 'video/video_player.html'
+
+
 def process_video(request, vid_pk):
     vid_upload = VideoUpload.objects.get(pk=vid_pk)
     vid = Video(
@@ -83,8 +91,8 @@ def process_video(request, vid_pk):
     return HttpResponse("ok")
 
 
-def get_video(request, video_slug, filetype):
-    v = Video.objects.get(slug=video_slug)
+def get_video(request, slug, filetype):
+    v = Video.objects.get(slug=slug)
 
     switcher = {
         "thumbnail": v.thumbnail.name,
@@ -104,14 +112,6 @@ def get_video(request, video_slug, filetype):
 
     return r
 
-
-def video_player(request, video_slug):
-    vid_object = Video.objects.get(slug=video_slug)
-    
-    if not vid_object.processed:
-        return render(request, "video/video_player.html")
-
-    return render(request, "video/video_player.html", {"vid": vid_object})
 
 def form_view(request):
     if not request.user.is_authenticated:
