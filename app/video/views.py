@@ -1,60 +1,60 @@
+# Django imports
+from django.conf import settings
+from django.core.paginator import Paginator
+from django.db import transaction
 from django.http import HttpResponse, JsonResponse, Http404
 from django.shortcuts import render
-from django.conf import settings
-from django.db import transaction
-from django.core.paginator import Paginator
+from django.views.generic.list import ListView
 
+# Python standard imports
 import json
 import os
 
-from chunked_upload.views import ChunkedUploadView, ChunkedUploadCompleteView
-from sendfile import sendfile
+# third-party imports
 from celery import group
+from chunked_upload.views import ChunkedUploadView, ChunkedUploadCompleteView
 from dal import autocomplete
+from sendfile import sendfile
 
+# local imports
 from .forms import UploadModelForm
 from .models import Video, VideoCollection, VideoUpload, MyChunkedUpload
 from .tasks import setup_video_processing, create_thumbnail, create_variants
 
+class VideoListView(ListView):
+    model = Video
+    template_name = 'video/index.html'
+    context_object_name = 'videos'
+    paginate_by = 10
 
-def video_index(request, collection=None):
-    if collection:
-        vid_results = Video.objects.filter(
-            upload__collections__slug=collection,
-            processed=True
-        ).order_by("-pk")
-        if not vid_results.count():
-            raise Http404()
-    else:
-        vid_results = Video.objects.filter(processed=True).order_by("-pk")
+    def get_queryset(self):
+        collection_request = self.kwargs.get('collection', None)
 
-    if not request.user.is_authenticated:
-        vid_results = vid_results.filter(upload__public=True)
-        collection_pks = vid_results.values_list('upload__collections', flat=True)
-        collections = VideoCollection.objects.filter(id__in=collection_pks)
-    else:
-        collections = VideoCollection.objects.all()
+        video_results = Video.objects.filter(processed=True).order_by("-pk")
 
-    # pagination
-    paginator = Paginator(vid_results, 6)
+        # if the user is requesting videos a specific collection
+        if collection_request:
+            video_results = video_results.filter(upload__collections__slug=collection_request)
 
-    page = request.GET.get('page', 1)
-    vids = paginator.get_page(page)
+        return video_results
 
-    # https://stackoverflow.com/questions/30864011/display-only-some-of-the-page-numbers-by-django-pagination
-    index = vids.number - 1
-    num_extra = 2
-    max_index = len(paginator.page_range)
-    start_index = index - num_extra if index >= num_extra else 0
-    end_index = index + (num_extra + 1) if index <= max_index - (num_extra + 1) else max_index
-    page_range = list(paginator.page_range)[start_index:end_index]
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
-    return render(request, "video/index.html", {
-        "videos": vids,
-        "page_range": page_range,
-        "search": collection,
-        "collections": collections,
-    })
+        video_results = context['videos']
+        collection_request = self.kwargs.get('collection', None)
+
+        if self.request.user.is_authenticated:
+            collections = VideoCollection.objects.all()
+        else:
+            # if user is not authenticated, only show public videos and connected collections
+            video_results = video_results.filter(upload__public=True)
+            collection_pks = video_results.values_list('upload__collections', flat=True)
+            collections = VideoCollection.objects.filter(id__in=collection_pks)
+
+        context['collections'] = collections
+        context['search'] = collection_request
+        return context
 
 def process_video(request, vid_pk):
     vid_upload = VideoUpload.objects.get(pk=vid_pk)
