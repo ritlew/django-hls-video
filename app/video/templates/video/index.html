@@ -54,7 +54,7 @@
         {% for vid in videos %}
             <div class="col-lg-6 mb-2">
                 <a href="{% url 'video_player' slug=vid.slug %}">
-                    <img class="img-fluid" src="{% url 'getter_file' slug=vid.slug filetype='thumbnail' %}">
+                    <img class="img-fluid" src="{% url 'get_thumbnail' slug=vid.slug %}">
                 </a>
                 <div class="text-white mb-1">
                     <div class="row align-items-center bg-dark h-25 py-2 mx-0">

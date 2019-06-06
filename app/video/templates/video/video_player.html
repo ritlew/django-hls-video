@@ -85,7 +85,7 @@ var options = {
     player = videojs('video', options);
     {% if video %}
         player.src({
-            src: "{% url 'getter_file' slug=video.slug filetype='video' %}",
+            src: "{% url 'get_master_playlist' slug=video.slug %}",
             type: "application/x-mpegURL"
         });
 

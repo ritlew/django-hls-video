@@ -2,10 +2,14 @@
 from django.conf import settings
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.http import HttpResponse, JsonResponse, Http404, Http405
 from django.shortcuts import render
+from django.views import View
+from django.views.generic.edit import FormView
 from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
+from django.http import (
+    JsonResponse, Http404, HttpResponseBadRequest, HttpResponseServerError
+)
 
 # Python standard imports
 import json
@@ -15,10 +19,12 @@ import os
 from celery import group
 from chunked_upload.views import ChunkedUploadView, ChunkedUploadCompleteView
 from dal import autocomplete
+from rest_framework import status
+from rest_framework.response import Response
 from sendfile import sendfile
 
 # local imports
-from .forms import UploadModelForm
+from .forms import VideoUploadForm
 from .models import Video, VideoCollection, VideoUpload, MyChunkedUpload
 from .tasks import setup_video_processing, create_thumbnail, create_variants
 
@@ -36,6 +42,8 @@ class VideoListView(ListView):
         # if the user is requesting videos a specific collection
         if collection_request:
             video_results = video_results.filter(upload__collections__slug=collection_request)
+        if not self.request.user.is_authenticated:
+            video_results = video_results.filter(upload__public=True)
 
         return video_results
 
@@ -49,7 +57,6 @@ class VideoListView(ListView):
             collections = VideoCollection.objects.all()
         else:
             # if user is not authenticated, only show public videos and connected collections
-            video_results = video_results.filter(upload__public=True)
             collection_pks = video_results.values_list('upload__collections', flat=True)
             collections = VideoCollection.objects.filter(id__in=collection_pks)
 
@@ -62,6 +69,88 @@ class VideoPlayerView(DetailView):
     model = Video
     queryset = Video.objects.filter(processed=True)
     template_name = 'video/video_player.html'
+
+    def get_object(self):
+        slug = self.kwargs.get('slug')
+
+        try:
+            video = self.queryset.get(slug=slug)
+        except Video.DoesNotExist:
+            raise HttpReponseBadRequest()
+
+        # if user doesn't have permission to request files for this video
+        if not video.upload.public and not self.request.user.is_authenticated:
+            raise Http404()
+
+        return video
+
+
+class SubmitVideoUpload(View):
+    template_name = 'video/form.html'
+
+    def get(sef, request, format=None):
+        if not request.user.is_authenticated:
+            raise Http404()
+
+        return render(request, 'video/form.html', {
+            'form': VideoUploadForm(),
+            'websocket_protocol': settings.WEBSOCKET_PROTOCOL }
+        )
+
+    def post(self, request, format=None):
+        if not request.user.is_authenticated:
+            return Http404()
+
+        form = VideoUploadForm(request.POST)
+        if form.is_valid():
+            vid = form.save(commit=False)
+            vid.upload_id = request.POST.get("upload_id", None)
+            vid.save()
+            form.save_m2m()
+            return Response({}, status=status.HTTP_201_CREATED)
+        else:
+            return Response({'detail': 'Form data is not valid'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class GetVideoFileView(VideoPlayerView):
+    """
+    Abstract view class to retreive a file for a specific video. Subclasses should
+    implement the get_filename() function and this class contains all other code to
+    reply to the request with that file.
+    """
+
+    def get_filename(self):
+        """
+        This function needs to be implemented by subclasses.
+        """
+        raise HttpResponseServerError()
+
+    def get(self, request, *args, **kwargs):
+        path = os.path.join(settings.MEDIA_ROOT, self.get_filename())
+
+        return sendfile(request, path)
+
+
+class GetVideoThumbnailView(GetVideoFileView):
+    def get_filename(self):
+        return self.get_object().thumbnail.name
+
+
+class GetMasterPlaylistView(GetVideoFileView):
+    def get_filename(self):
+        return self.get_object().master_playlist.name
+
+
+class GetVariantPlaylistView(GetVideoFileView):
+    def get_filename(self):
+        variant = self.kwargs.get('variant')
+        return self.get_object().variants.get(resolution=variant).playlist_file.name
+
+
+class GetVariantVideoView(GetVideoFileView):
+    def get_filename(self):
+        variant = self.kwargs.get('variant')
+        return self.get_object().variants.get(resolution=variant).video_file.name
 
 
 def process_video(request, vid_pk):
@@ -89,49 +178,6 @@ def process_video(request, vid_pk):
         vid.processing_id = res.id
         vid.save()
     return HttpResponse("ok")
-
-
-def get_video(request, slug, filetype):
-    v = Video.objects.get(slug=slug)
-
-    switcher = {
-        "thumbnail": v.thumbnail.name,
-        "video": v.master_playlist.name,
-    }
-    filename = switcher.get(filetype, None)
-
-    if not filename:
-        if "m4s" in filetype:
-            filename = v.variants.get(resolution=os.path.splitext(filetype)[0]).video_file.name
-        else:
-            filename = v.variants.get(resolution=os.path.splitext(filetype)[0]).playlist_file.name
-
-    path = os.path.join(settings.MEDIA_ROOT, filename)
-
-    r = sendfile(request, path)
-
-    return r
-
-
-def form_view(request):
-    if not request.user.is_authenticated:
-        return Http404()
-
-    if request.method == 'POST':
-        # stop attempted file upload on this endpoint
-        form = UploadModelForm(request.POST)
-        if form.is_valid():
-            vid = form.save(commit=False)
-            vid.upload_id = request.POST.get("upload_id")
-            vid.save()
-            form.save_m2m()
-            return JsonResponse({"message": "ok"})
-    else:
-        form = UploadModelForm()
-    return render(request, 'video/form.html', {
-        'form': form, 
-        'websocket_protocol': settings.WEBSOCKET_PROTOCOL
-    })
 
 
 # https://django-autocomplete-light.readthedocs.io/en/master/tutorial.html
@@ -195,7 +241,7 @@ class MyChunkedUploadCompleteView(ChunkedUploadCompleteView):
             vid.save()
 
         return JsonResponse({"message": "file upload success"})
-        
+
 
     def get_response_data(self, chunked_upload, request):
         return {'message': ("You successfully uploaded '%s' (%s bytes)!" %
