@@ -5,7 +5,6 @@ from . import views
 urlpatterns = [
     path('', views.VideoListView.as_view(), name="video_index"),
     path('s/<collection>/', views.VideoListView.as_view(), name="video_index"),
-    path('process/<int:vid_pk>/', views.process_video, name='process_video'),
     path('get/<slug:slug>/', include([
         path('thumbnail/', views.GetVideoThumbnailView.as_view(), name="get_thumbnail"),
         path('master_playlist/', include([

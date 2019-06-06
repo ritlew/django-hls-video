@@ -20,12 +20,13 @@ from celery import group
 from chunked_upload.views import ChunkedUploadView, ChunkedUploadCompleteView
 from dal import autocomplete
 from rest_framework import status
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from sendfile import sendfile
 
 # local imports
 from .forms import VideoUploadForm
-from .models import Video, VideoCollection, VideoUpload, MyChunkedUpload
+from .models import Video, VideoCollection, VideoUpload, VideoChunkedUpload
 from .tasks import setup_video_processing, create_thumbnail, create_variants
 
 class VideoListView(ListView):
@@ -85,33 +86,6 @@ class VideoPlayerView(DetailView):
         return video
 
 
-class SubmitVideoUpload(View):
-    template_name = 'video/form.html'
-
-    def get(sef, request, format=None):
-        if not request.user.is_authenticated:
-            raise Http404()
-
-        return render(request, 'video/form.html', {
-            'form': VideoUploadForm(),
-            'websocket_protocol': settings.WEBSOCKET_PROTOCOL }
-        )
-
-    def post(self, request, format=None):
-        if not request.user.is_authenticated:
-            return Http404()
-
-        form = VideoUploadForm(request.POST)
-        if form.is_valid():
-            vid = form.save(commit=False)
-            vid.upload_id = request.POST.get("upload_id", None)
-            vid.save()
-            form.save_m2m()
-            return Response({}, status=status.HTTP_201_CREATED)
-        else:
-            return Response({'detail': 'Form data is not valid'}, status=status.HTTP_400_BAD_REQUEST)
-
-
 class GetVideoFileView(VideoPlayerView):
     """
     Abstract view class to retreive a file for a specific video. Subclasses should
@@ -153,31 +127,31 @@ class GetVariantVideoView(GetVideoFileView):
         return self.get_object().variants.get(resolution=variant).video_file.name
 
 
-def process_video(request, vid_pk):
-    vid_upload = VideoUpload.objects.get(pk=vid_pk)
-    vid = Video(
-        upload=vid_upload,
-        processed=False,
-        master_playlist=None,
-        thumbnail=None
-    )
-    vid.save()
+class SubmitVideoUpload(APIView):
+    template_name = 'video/form.html'
 
-    processing_tasks = (
-        setup_video_processing.s(vid.pk) |
-        group(
-            create_thumbnail.si(vid.pk),
-            create_variants.si(vid.pk)
+    def get(sef, request, format=None):
+        if not request.user.is_authenticated:
+            raise Http404()
+
+        return render(request, 'video/form.html', {
+            'form': VideoUploadForm(),
+            'websocket_protocol': settings.WEBSOCKET_PROTOCOL }
         )
-    )
 
-    res = processing_tasks.delay()
-    with transaction.atomic():
-        vid = Video.objects.get(pk=vid.pk)
-        res.save()
-        vid.processing_id = res.id
-        vid.save()
-    return HttpResponse("ok")
+    def post(self, request, format=None):
+        if not request.user.is_authenticated:
+            return Http404()
+
+        form = VideoUploadForm(request.POST)
+        if form.is_valid():
+            vid = form.save(commit=False)
+            vid.upload_id = request.POST.get("upload_id", None)
+            vid.save()
+            form.save_m2m()
+            return Response({}, status=status.HTTP_201_CREATED)
+        else:
+            return Response({'detail': 'Form data is not valid'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # https://django-autocomplete-light.readthedocs.io/en/master/tutorial.html
@@ -186,32 +160,28 @@ class CollectionAutocomplete(autocomplete.Select2QuerySetView):
         if not self.request.user.is_authenticated:
             return VideoCollection.objects.none()
 
-        qs = VideoCollection.objects.all()
+        queryset = VideoCollection.objects.all()
 
         if self.q:
-            qs = qs.filter(title__istartswith=self.q)
+            queryset = queryset.filter(title__istartswith=self.q)
 
-        return qs
+        return queryset
 
 
 class MyChunkedUploadView(ChunkedUploadView):
-
-    model = MyChunkedUpload
+    model = VideoChunkedUpload
     field_name = 'raw_video_file'
 
     def check_permissions(self, request):
-        # Allow non authenticated users to make uploads
-        pass
+        return request.user.is_superuser or request.user.is_staff
 
 
 class MyChunkedUploadCompleteView(ChunkedUploadCompleteView):
-
-    model = MyChunkedUpload
+    model = VideoChunkedUpload
     do_md5_check = False
 
     def check_permissions(self, request):
-        # Allow non authenticated users to make uploads
-        pass
+        return request.user.is_superuser or request.user.is_staff
 
     def on_completion(self, uploaded_file, request):
         vid_upload = VideoUpload.objects.get(upload_id=request.POST.get("upload_id"))

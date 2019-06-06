@@ -66,6 +66,6 @@ class VideoVariant(models.Model):
     resolution = models.SmallIntegerField()
 
 
-class MyChunkedUpload(ChunkedUpload):
+class VideoChunkedUpload(ChunkedUpload):
     pass
 
