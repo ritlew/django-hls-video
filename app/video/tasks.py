@@ -12,7 +12,7 @@ from django.db import transaction
 from itertools import filterfalse
 from time import strftime, gmtime
 
-from .models import MyChunkedUpload, VideoUpload, Video, VideoVariant, RESOLUTIONS
+from .models import VideoChunkedUpload, VideoUpload, Video, VideoVariant, RESOLUTIONS
 
 
 @shared_task(bind=True)
@@ -23,7 +23,7 @@ def setup_video_processing(self, video_pk):
     print("Saving video")
     with transaction.atomic():
         video = Video.objects.get(pk=video_pk)
-        chunked_upload = MyChunkedUpload.objects.get(upload_id=video.upload.upload_id)
+        chunked_upload = VideoChunkedUpload.objects.get(upload_id=video.upload.upload_id)
         video.upload.raw_video_file = chunked_upload.get_uploaded_file()
         video.upload.save()
     print("Saving completed")

@@ -1,17 +1,12 @@
 version: '3'
 
-volumes:
-    static-content:
-    web-db:
-        driver: local
-
 services:
     db:
         image: postgres:11.1-alpine
         command: postgres -c log_min_error_statement=WARNING
         user: postgres
         volumes:
-            - web-db:/var/lib/postgresql/data
+            - web-db:/var/lib/postgresql/data:Z
         environment:
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -34,8 +29,8 @@ services:
             PROD: ${UWSGI_PROD}
             SECRET_KEY: ${SECRET_KEY}
         volumes:
-            - static-content:/code/static
-            - ${MEDIA_PATH}:/code/media
+            - static-content:/code/static:z
+            - media-files:/code/media:z
         depends_on:
             - db
             - redis
@@ -47,11 +42,13 @@ services:
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASSWORD}
             SECRET_KEY: ${SECRET_KEY}
+            PROD: ${UWSGI_PROD}
         volumes:
-            - ${MEDIA_PATH}:/code/media
+            - media-files:/code/media
         depends_on:
             - db
             - redis
+            - uwsgi
         restart: always
     flower:
         image: mher/flower
@@ -68,7 +65,7 @@ services:
             SECRET_KEY: ${SECRET_KEY}
         command: daphne -b 0.0.0.0 -p 8002 django_hls_video.asgi:application
         volumes:
-            - ${MEDIA_PATH}:/code/media
+            - media-files:/code/media:ro
         depends_on:
             - db
             - redis
@@ -76,13 +73,18 @@ services:
     nginx:
         image: nginx:1.15.8-alpine
         ports: 
-            - "8001:80"
+            - "4002:80"
         volumes:
-            - static-content:/static
-            - ./config/nginx/conf.d:/etc/nginx/conf.d
-            - ${MEDIA_PATH}:/media
+            - static-content:/static:ro
+            - media-files:/media:ro
+            - ./config/nginx/conf.d:/etc/nginx/conf.d:Z
         depends_on:
             - daphne
             - uwsgi
         restart: always
+
+volumes:
+    static-content:
+    web-db:
+    media-files:
 

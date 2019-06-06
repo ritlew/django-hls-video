@@ -8,7 +8,7 @@ TRUE_FALSE_CHOICES = (
     (True, "Yes"),
 )
 
-class UploadModelForm(forms.ModelForm):
+class VideoUploadForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

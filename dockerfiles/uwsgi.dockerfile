@@ -17,6 +17,6 @@ COPY app/requirements.txt /code/requirements.txt
 
 RUN pip install -r requirements.txt
  
-COPY ./app/ /code/
 COPY ./config/uwsgi/sites/django-hls-video /code/
+COPY ./app/ /code/
 
