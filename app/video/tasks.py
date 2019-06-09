@@ -12,7 +12,7 @@ from django.db import transaction
 from itertools import filterfalse
 from time import strftime, gmtime
 
-from .models import VideoChunkedUpload, VideoUpload, Video, VideoVariant, RESOLUTIONS
+from .models import VideoChunkedUpload, Video, VideoVariant, RESOLUTIONS
 
 
 @shared_task(bind=True)
@@ -23,19 +23,19 @@ def setup_video_processing(self, video_pk):
     print("Saving video")
     with transaction.atomic():
         video = Video.objects.get(pk=video_pk)
-        chunked_upload = VideoChunkedUpload.objects.get(upload_id=video.upload.upload_id)
-        video.upload.raw_video_file = chunked_upload.get_uploaded_file()
-        video.upload.save()
+        chunked_upload = VideoChunkedUpload.objects.get(upload_id=video.upload_id)
+        video.raw_video_file = chunked_upload.get_uploaded_file()
+        video.save()
     print("Saving completed")
 
-    upload_filepath = video.upload.raw_video_file.name
+    upload_filepath = video.raw_video_file.name
 
     # create the video folder name
     folder_path = os.path.relpath(
         os.path.join(
             settings.SENDFILE_ROOT,
             'video',
-            os.path.splitext(os.path.basename(upload_filepath))[0] + f'_{video.upload.pk}'
+            os.path.splitext(os.path.basename(upload_filepath))[0] + f'_{video.pk}'
         )
     )
 
@@ -72,7 +72,7 @@ def create_thumbnail(self, video_pk):
     # create thumbnail command for ffmpeg
     thumbnail_timestamp = strftime('%H:%M:%S', gmtime(int(duration / 2)))
     thumbnail_command = \
-       f'ffmpeg -v quiet -hide_banner -i {video.upload.raw_video_file.name} ' \
+       f'ffmpeg -v quiet -hide_banner -i {video.raw_video_file.name} ' \
        f'-ss {thumbnail_timestamp}.000 -vframes 1 {video.folder_path}/thumb.jpg'
     subprocess.Popen(shlex.split(thumbnail_command)).wait()
 
@@ -102,7 +102,7 @@ def create_variants(self, video_pk):
                 print('Height not evenly divisible by 120')
 
     # start ffmpeg command
-    command = f'ffmpeg -v quiet -i {video.upload.raw_video_file.name} -progress - -c:a aac -ac 2 -c:v libx264 -crf 20 '
+    command = f'ffmpeg -v quiet -i {video.raw_video_file.name} -progress - -c:a aac -ac 2 -c:v libx264 -crf 20 '
 
     # working variables to build stream specific parts of command
     bitrates = ''
@@ -173,7 +173,7 @@ def create_variants(self, video_pk):
                 self.update_state(
                     state="P" + str(int(percent)),
                     meta={
-                        'progress': round(percent, 2),
+                        'progress': int(percent),
                         'current': int(current),
                         'total': duration
                     }
@@ -194,7 +194,7 @@ def create_variants(self, video_pk):
         video = Video.objects.get(pk=video_pk)
         video.processed = True
         video.master_playlist = os.path.join(video.folder_path, 'master.m3u8')
-        video.upload.raw_video_file.delete()
+        video.raw_video_file.delete()
         video.save()
     return
 

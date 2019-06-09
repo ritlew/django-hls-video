@@ -11,7 +11,6 @@ import time
 
 RESOLUTIONS = [240, 360, 480, 720, 1080]
 
-
 class VideoCollection(models.Model):
     title = models.CharField(max_length=50)
     description = models.CharField(max_length=50, null=True)
@@ -21,32 +20,35 @@ class VideoCollection(models.Model):
         return self.title
     
 
-class VideoUpload(models.Model):
-    # form elements
-    title = models.CharField(max_length=50)
-    description = models.TextField()
+class Video(models.Model):
+    ### user facing elements
+    title = models.CharField(max_length=50, default='Untitled')
+    description = models.TextField(default='')
     collections = models.ManyToManyField(VideoCollection, related_name='videos')
     public = models.BooleanField(default=False)
+    slug = AutoSlugField(populate_from='title', unique=True)
+
+    ### interal logic elements
+    # ID from chunked upload
+    upload_id = models.CharField(max_length=50)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    # json results from ffprobe as a string
+    # use the vid_info property to access this as a dictionary
+    vid_info_str = models.TextField(null=True)
+    # path to the folder where the video files are stored
+    # e.g. the variant videos and playlists, the thumbnail
+    folder_path = models.CharField(max_length=100, null=True)
+    # boolean expressing whether the video has finished processing or not
+    processed = models.BooleanField(default=False)
+    # celery task id of the processing tasks
+    processing_id = models.CharField(max_length=100, null=True)
+    # the master playlist for the HLS variants video stream
+    master_playlist = models.FileField(null=True)
+    thumbnail = models.FileField(null=True)
     raw_video_file = models.FileField(
         null=True, # required for chunked upload
         upload_to=os.path.join(settings.SENDFILE_REL_PATH, 'video/')
     )
-    upload_id = models.CharField(max_length=50, null=True)
-
-class Video(models.Model):
-    upload = models.OneToOneField(VideoUpload, on_delete=models.CASCADE)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    vid_info_str = models.TextField(null=True)
-    folder_path = models.CharField(max_length=100, null=True)
-    slug = AutoSlugField(populate_from='title', unique=True)
-    processed = models.BooleanField(default=False)
-    processing_id = models.CharField(max_length=100, null=True)
-    master_playlist = models.FileField(null=True)
-    thumbnail = models.FileField(null=True)
-
-    @property
-    def title(self):
-        return self.upload.title
 
     @property
     def vid_info(self):
@@ -60,9 +62,13 @@ class Video(models.Model):
 
 
 class VideoVariant(models.Model):
+    # Video that has the common information for this variant
     master = models.ForeignKey(Video, on_delete=models.CASCADE, related_name='variants')
+    # m3u8 playlist file for this variant
     playlist_file = models.FileField()
+    # m4s video file for this variant
     video_file = models.FileField()
+    # resolution that is an index of RESOLUTIONS defined at the top of this file
     resolution = models.SmallIntegerField()
 
 

@@ -4,6 +4,7 @@ from django.core.paginator import Paginator
 from django.db import transaction
 from django.shortcuts import render
 from django.views import View
+from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
@@ -26,7 +27,7 @@ from sendfile import sendfile
 
 # local imports
 from .forms import VideoUploadForm
-from .models import Video, VideoCollection, VideoUpload, VideoChunkedUpload
+from .models import Video, VideoCollection, VideoChunkedUpload
 from .tasks import setup_video_processing, create_thumbnail, create_variants
 
 class VideoListView(ListView):
@@ -42,9 +43,9 @@ class VideoListView(ListView):
 
         # if the user is requesting videos a specific collection
         if collection_request:
-            video_results = video_results.filter(upload__collections__slug=collection_request)
+            video_results = video_results.filter(collections__slug=collection_request)
         if not self.request.user.is_authenticated:
-            video_results = video_results.filter(upload__public=True)
+            video_results = video_results.filter(public=True)
 
         return video_results
 
@@ -58,7 +59,7 @@ class VideoListView(ListView):
             collections = VideoCollection.objects.all()
         else:
             # if user is not authenticated, only show public videos and connected collections
-            collection_pks = video_results.values_list('upload__collections', flat=True)
+            collection_pks = video_results.values_list('collections', flat=True)
             collections = VideoCollection.objects.filter(id__in=collection_pks)
 
         context['collections'] = collections
@@ -80,7 +81,7 @@ class VideoPlayerView(DetailView):
             raise HttpReponseBadRequest()
 
         # if user doesn't have permission to request files for this video
-        if not video.upload.public and not self.request.user.is_authenticated:
+        if not video.public and not self.request.user.is_authenticated:
             raise Http404()
 
         return video
@@ -145,13 +146,19 @@ class SubmitVideoUpload(APIView):
 
         form = VideoUploadForm(request.POST)
         if form.is_valid():
-            vid = form.save(commit=False)
-            vid.upload_id = request.POST.get("upload_id", None)
+            upload_id = form.cleaned_data['upload_id']
+            vid, created = Video.objects.get_or_create(upload_id=upload_id, user=request.user)
+            vid.title = form.cleaned_data['title']
+            vid.description = form.cleaned_data['description']
+            vid.collections.set(form.cleaned_data['collections'])
             vid.save()
-            form.save_m2m()
             return Response({}, status=status.HTTP_201_CREATED)
         else:
             return Response({'detail': 'Form data is not valid'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UploadsProgress(TemplateView):
+    template_name = 'video/upload_progress.html'
 
 
 # https://django-autocomplete-light.readthedocs.io/en/master/tutorial.html
@@ -168,7 +175,7 @@ class CollectionAutocomplete(autocomplete.Select2QuerySetView):
         return queryset
 
 
-class MyChunkedUploadView(ChunkedUploadView):
+class VideoChunkedUploadView(ChunkedUploadView):
     model = VideoChunkedUpload
     field_name = 'raw_video_file'
 
@@ -176,7 +183,7 @@ class MyChunkedUploadView(ChunkedUploadView):
         return request.user.is_superuser or request.user.is_staff
 
 
-class MyChunkedUploadCompleteView(ChunkedUploadCompleteView):
+class VideoChunkedUploadCompleteView(ChunkedUploadCompleteView):
     model = VideoChunkedUpload
     do_md5_check = False
 
@@ -184,16 +191,7 @@ class MyChunkedUploadCompleteView(ChunkedUploadCompleteView):
         return request.user.is_superuser or request.user.is_staff
 
     def on_completion(self, uploaded_file, request):
-        vid_upload = VideoUpload.objects.get(upload_id=request.POST.get("upload_id"))
-
-        vid = Video(
-            upload=vid_upload,
-            user=request.user,
-            processed=False,
-            master_playlist=None,
-            thumbnail=None
-        )
-        vid.save()
+        vid, created = Video.objects.get_or_create(user=request.user, upload_id=request.POST.get("upload_id"))
 
         processing_tasks = (
             setup_video_processing.s(vid.pk) |
@@ -216,3 +214,4 @@ class MyChunkedUploadCompleteView(ChunkedUploadCompleteView):
     def get_response_data(self, chunked_upload, request):
         return {'message': ("You successfully uploaded '%s' (%s bytes)!" %
 (chunked_upload.filename, chunked_upload.offset))}
+

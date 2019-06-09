@@ -1,10 +1,13 @@
 from channels.generic.websocket import WebsocketConsumer
 from celery.result import GroupResult
+from collections import namedtuple
 import json
 
 from .models import Video
 
-class TestConsumer(WebsocketConsumer):
+VideoResult = namedtuple('VideoResult', ['video', 'task'])
+
+class UploadProgressConsumer(WebsocketConsumer):
     def connect(self):
         self.accept()
 
@@ -13,19 +16,37 @@ class TestConsumer(WebsocketConsumer):
 
     def receive(self, text_data):
         text_data_json = json.loads(text_data)
-        group_res = GroupResult.restore(
-            Video.objects.get(upload__upload_id=text_data_json["upload_id"]).processing_id
-        )
-        
-        data = {}
-        for res in group_res.results:
-            if res.info:
-                data = res.info
+        upload_ids = text_data_json.get("upload_ids", None)
 
-        if group_res.ready():
-            data = {
-                'progress': 100,
+        currently_processing = []
+
+        if upload_ids:
+            processing_videos = Video.objects.filter(upload_id__in=upload_ids)
+        else:
+            processing_videos = Video.objects.filter(processed=False)
+
+        for video in processing_videos:
+            result = GroupResult.restore(video.processing_id)
+            if result:
+                currently_processing.append(VideoResult(video, result))
+
+        response = {'uploads': []}
+        for item in currently_processing:
+            item_info = {
+                'upload_id': str(item.video.upload_id),
+                'title': item.video.title,
+                'slug': item.video.slug,
+                'processed': item.video.processed,
             }
 
-        self.send(text_data=json.dumps(data))
+            for results in item.task.results:
+                if results.info:
+                    response['uploads'].append({
+                        **item_info,
+                        **results.info
+                    })
+            else:
+                response['uploads'].append(item_info)
+
+        self.send(text_data=json.dumps(response))
 

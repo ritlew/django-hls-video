@@ -1,7 +1,7 @@
 from django import forms
 from dal import autocomplete
 
-from .models import VideoUpload
+from .models import Video
 
 TRUE_FALSE_CHOICES = (
     (False, "No"),
@@ -22,23 +22,19 @@ class VideoUploadForm(forms.ModelForm):
                 'class': 'form-control'
             })
 
-        self.fields['raw_video_file'].widget.attrs.update({
-            'class': 'form-control-file'
-        })
         self.fields['collections'].widget.attrs.update({
             'data-theme': 'bootstrap',
         })
-        self.fields['raw_video_file'].required = False
+
+        self.fields['upload_id'].label = ''
 
 
     class Meta:
-        model = VideoUpload
-        exclude = ['upload_id']
-        labels = {
-            'raw_video_file': 'Video File'
-        }
+        model = Video
+        fields = ['title', 'description', 'collections', 'public', 'upload_id']
         widgets = {
-            'collections': autocomplete.ModelSelect2Multiple(url='api_collection_autocomplete')
+            'collections': autocomplete.ModelSelect2Multiple(url='api_collection_autocomplete'),
+            'upload_id': forms.HiddenInput()
         }
 
 
