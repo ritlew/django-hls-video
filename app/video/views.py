@@ -78,7 +78,7 @@ class VideoPlayerView(DetailView):
         try:
             video = self.queryset.get(slug=slug)
         except Video.DoesNotExist:
-            raise HttpReponseBadRequest()
+            raise Http404()
 
         # if user doesn't have permission to request files for this video
         if not video.public and not self.request.user.is_authenticated:
@@ -93,6 +93,7 @@ class GetVideoFileView(VideoPlayerView):
     implement the get_filename() function and this class contains all other code to
     reply to the request with that file.
     """
+    queryset = Video.objects.filter()
 
     def get_filename(self):
         """
@@ -113,19 +114,34 @@ class GetVideoThumbnailView(GetVideoFileView):
 
 class GetMasterPlaylistView(GetVideoFileView):
     def get_filename(self):
+        field = self.get_object().master_playlist
+
+        if not field:
+            raise Http404()
+
         return self.get_object().master_playlist.name
 
 
 class GetVariantPlaylistView(GetVideoFileView):
     def get_filename(self):
         variant = self.kwargs.get('variant')
-        return self.get_object().variants.get(resolution=variant).playlist_file.name
+        field = self.get_object().variants.get(resolution=variant)
+
+        if not field:
+            raise Http404()
+
+        return field.playlist_file.name
 
 
 class GetVariantVideoView(GetVideoFileView):
     def get_filename(self):
         variant = self.kwargs.get('variant')
-        return self.get_object().variants.get(resolution=variant).video_file.name
+        field = self.get_object().variants.get(resolution=variant)
+
+        if not field:
+            raise Http404()
+
+        return field.video_file.name
 
 
 class SubmitVideoUpload(APIView):
@@ -142,7 +158,7 @@ class SubmitVideoUpload(APIView):
 
     def post(self, request, format=None):
         if not request.user.is_authenticated:
-            return Http404()
+            raise Http404()
 
         form = VideoUploadForm(request.POST)
         if form.is_valid():
@@ -157,8 +173,20 @@ class SubmitVideoUpload(APIView):
             return Response({'detail': 'Form data is not valid'}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UploadsProgress(TemplateView):
-    template_name = 'video/upload_progress.html'
+class UserUploadsView(ListView):
+    model = Video
+    template_name = 'video/user_uploads.html'
+    context_object_name = 'videos'
+    paginate_by = 10
+
+    def get_queryset(self):
+        # if the user is requesting videos a specific collection
+        if not self.request.user.is_authenticated:
+            raise Http404()
+
+        video_results = Video.objects.filter(user=self.request.user).order_by("-pk")
+
+        return video_results
 
 
 # https://django-autocomplete-light.readthedocs.io/en/master/tutorial.html
@@ -201,9 +229,9 @@ class VideoChunkedUploadCompleteView(ChunkedUploadCompleteView):
             )
         )
 
-        res = processing_tasks.delay()
         with transaction.atomic():
             vid = Video.objects.get(pk=vid.pk)
+            res = processing_tasks.delay()
             res.save()
             vid.processing_id = res.id
             vid.save()

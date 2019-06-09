@@ -3,83 +3,82 @@
 {% load staticfiles %}
 
 {% block head %}
-<style>
-.badge-large-text {
-    font-size: 100%;
-}
-</style>
+    <script src="{% static 'video/js/upload_progress.js' %}"></script>
+    <style>
+    .badge-large-text {
+        font-size: 100%;
+    }
+    </style>
 {% endblock %}
 
 {% block main %}
 <div class="jumbotron py-4 mb-2">
     <div class="container text-center">
-        <h1>Videos</h1>      
+        <h1>Your Uploads</h1>
     </div>
 </div>
 <div class="row mt-2">
-    {# sidebar #}
-    <div class="col-lg-2">
-        {# Video upload button #}
-        {% if request.user.is_staff or request.user.is_superuser %}
-        <div class="text-center">
-            <a href="{% url 'video_form' %}" class="btn btn-primary mw-100">Upload video</a>
-        </div>
-        {% endif %}
-        {# collections nav #}
-        {% if collections %}
-        <div class="list-group sticky-top py-3">
-            <a class="list-group-item list-group-item-action active">
-                Collections
-            </a>
-            {% for c in collections %}
-            {% if search == c.slug %}
-            <a href="{% url 'video_index' collection=c.slug %}" 
-               class="list-group-item list-group-item-action bg-info text-white">
-                {{ c.title }}
-            </a>
-            {% else %}
-            <a href="{% url 'video_index' collection=c.slug %}" 
-               class="list-group-item list-group-item-action">
-                {{ c.title }}
-            </a>
-            {% endif %}
-            {% endfor %}
-        </div>
-        {% endif %}
-    </div>
-
     {# display videos #}
-    <div class="col-lg-10">
-        <div class="row">
+    <div class="col-lg-12">
         {% for vid in videos %}
-            <div class="col-lg-6 mb-2">
+        <div class="row border m-2">
+            <div class="col-md-5 my-2">
                 <a href="{% url 'video_player' slug=vid.slug %}">
                     <img class="img-fluid" src="{% url 'get_thumbnail' slug=vid.slug %}">
                 </a>
-                <div class="text-white mb-1">
-                    <div class="row align-items-center bg-dark h-25 py-2 mx-0">
-                        {% for c in vid.collections.all %}
-                        <a class="col-auto" href="{% url 'video_index' collection=c.slug %}">
-                            <span class="badge badge-pill badge-secondary badge-large-text">{{ c.title }}</span>
-                        </a>
-                        {% endfor %}
+            </div>
+            <div class="col-md-7 my-2">
+                <div class="row">
+                    <div class="col-12">
+                        <h3>{{ vid.title }}</h3>
                     </div>
-                    <a href="{% url 'video_player' slug=vid.slug %}">
-                        <div class="row text-white bg-primary h-75 mx-0">
-                            <div class="card-body mw-100 pt-2 pb-0">
-                                <h4 class="card-title"><bold>{{ vid.title }}</bold> - {{ vid.play_time }}</h4>
-                                <p class="text-truncate">{{ vid.description }}</p>
-                            </div>
+                </div>
+                {% if vid.vid_info_str %}
+                    <div class="row">
+                        <div class="col-12">
+                            {{ vid.play_time }}
                         </div>
-                    </a>
+                    </div>
+                {% endif %}
+                <div class="row">
+                    <div class="col-12">
+                        <p class="text-truncate">
+                            {% if vid.description %}
+                                {{ vid.description }}
+                            {% else %}
+                                <i>No Description</i>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% if not vid.processed %}
+                    <div class="row mb-1">
+                        <div id="{{ vid.upload_id }}" class="col-md-12">
+                            Processing Progress
+                            <div class="custom-progress progress-bar bg-info" role="progressbar" style="width: 0%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                {% endif %}
+                <div class="row align-bottom">
+                    <div class="col-md-12">
+                        <a class="btn btn-sm btn-primary" href="{% url 'video_player' slug=vid.slug %}">
+                            <i class="fas fa-play"></i>
+                        </a>
+                        <a class="btn btn-sm btn-info" href="{% url 'video_index' %}">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a class="btn btn-sm btn-danger" href="{% url 'video_index' %}">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
+        </div>
         {% empty %}
             <div class="col-lg-10 text-center">
                 <h3>Oops! No videos found!</h3>
             </div>
         {% endfor %}
-        </div>
 
         {# pagination #}
         <div class="row">
@@ -127,7 +126,25 @@
                 </nav>
             </div>
         </div>
-        {% endblock %}
     </div>
 </div>
 
+<script>
+    var page_uploads = [
+        {% for vid in videos %}
+            "{{ vid.upload_id }}",
+        {% endfor %}
+    ];
+    trackUploadProgress(page_uploads, function(data){
+        $.each(data.uploads, function(index, value){
+            if (!value.processed){
+                $(`#${value.upload_id} > .progress-bar`).html(`Encoded ${value.current}s of ${value.total}s`);
+                $(`#${value.upload_id} > .progress-bar`).css("width", `${value.progress}%`);
+            } else {
+                $(`#${value.upload_id} > .progress-bar`).html(`Processing complete!`);
+                $(`#${value.upload_id} > .progress-bar`).css("width", `100%`);
+            }
+        });
+    }, 500);
+</script>
+{% endblock %}

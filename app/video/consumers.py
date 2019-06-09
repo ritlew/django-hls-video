@@ -19,6 +19,7 @@ class UploadProgressConsumer(WebsocketConsumer):
         upload_ids = text_data_json.get("upload_ids", None)
 
         currently_processing = []
+        response = {'uploads': []}
 
         if upload_ids:
             processing_videos = Video.objects.filter(upload_id__in=upload_ids)
@@ -26,11 +27,11 @@ class UploadProgressConsumer(WebsocketConsumer):
             processing_videos = Video.objects.filter(processed=False)
 
         for video in processing_videos:
-            result = GroupResult.restore(video.processing_id)
-            if result:
-                currently_processing.append(VideoResult(video, result))
+            if video.processing_id:
+                result = GroupResult.restore(video.processing_id)
+                if result:
+                    currently_processing.append(VideoResult(video, result))
 
-        response = {'uploads': []}
         for item in currently_processing:
             item_info = {
                 'upload_id': str(item.video.upload_id),
@@ -45,6 +46,7 @@ class UploadProgressConsumer(WebsocketConsumer):
                         **item_info,
                         **results.info
                     })
+                    break
             else:
                 response['uploads'].append(item_info)
 
