@@ -166,9 +166,16 @@ class SubmitVideoUpload(APIView):
         if form.is_valid():
             upload_id = form.cleaned_data['upload_id']
             vid, created = Video.objects.get_or_create(upload_id=upload_id, user=request.user)
+
+            # if the videos title was the default title
+            if Video._meta.get_field('title').get_default() == vid.title:
+                # nullify the slug so it can autopopulate again
+                vid.slug = None
+
             vid.title = form.cleaned_data['title']
             vid.description = form.cleaned_data['description']
             vid.collections.set(form.cleaned_data['collections'])
+
             vid.save()
             return Response({}, status=status.HTTP_201_CREATED)
         else:
