@@ -50,7 +50,7 @@ def setup_video_processing(self, video_pk):
 
     # save gained data to video object
     with transaction.atomic():
-        video = Video.objects.get(pk=video_pk)
+        video = Video.objects.select_for_update().get(pk=video_pk)
         video.vid_info_str = vid_info_str
         video.folder_path = folder_path
         video.save()
@@ -77,7 +77,7 @@ def create_thumbnail(self, video_pk):
     subprocess.Popen(shlex.split(thumbnail_command)).wait()
 
     with transaction.atomic():
-        video = Video.objects.get(pk=video_pk)
+        video = Video.objects.select_for_update().get(pk=video_pk)
         video.thumbnail = os.path.join(video.folder_path, "thumb.jpg")
         video.save()
 
@@ -191,7 +191,7 @@ def create_variants(self, video_pk):
     master.dump(master_playlist_filepath)
 
     with transaction.atomic():
-        video = Video.objects.get(pk=video_pk)
+        video = Video.objects.select_for_update().get(pk=video_pk)
         video.processed = True
         video.master_playlist = os.path.join(video.folder_path, 'master.m3u8')
         video.raw_video_file.delete()
