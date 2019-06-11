@@ -204,7 +204,7 @@ class CollectionAutocomplete(autocomplete.Select2QuerySetView):
         if not self.request.user.is_authenticated:
             return VideoCollection.objects.none()
 
-        queryset = VideoCollection.objects.all()
+        queryset = VideoCollection.objects.all().order_by('title')
 
         if self.q:
             queryset = queryset.filter(title__istartswith=self.q)
