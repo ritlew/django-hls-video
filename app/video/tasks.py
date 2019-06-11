@@ -17,18 +17,13 @@ from .models import VideoChunkedUpload, Video, VideoVariant, RESOLUTIONS
 
 @shared_task(bind=True)
 def setup_video_processing(self, video_pk):
+    video = Video.objects.get(pk=video_pk)
+    raw_video_file = VideoChunkedUpload.objects.get(upload_id=video.upload_id).file
+
     # change to media directory
     os.chdir(settings.MEDIA_ROOT)
 
-    print("Saving video")
-    with transaction.atomic():
-        video = Video.objects.get(pk=video_pk)
-        chunked_upload = VideoChunkedUpload.objects.get(upload_id=video.upload_id)
-        video.raw_video_file = chunked_upload.get_uploaded_file()
-        video.save()
-    print("Saving completed")
-
-    upload_filepath = video.raw_video_file.name
+    upload_filepath = raw_video_file.name
 
     # create the video folder name
     folder_path = os.path.relpath(
@@ -62,6 +57,7 @@ def setup_video_processing(self, video_pk):
 def create_thumbnail(self, video_pk):
     # get the upload object
     video = Video.objects.get(pk=video_pk)
+    raw_video_file = VideoChunkedUpload.objects.get(upload_id=video.upload_id).file
 
     # change to media directory
     os.chdir(settings.MEDIA_ROOT)
@@ -72,7 +68,7 @@ def create_thumbnail(self, video_pk):
     # create thumbnail command for ffmpeg
     thumbnail_timestamp = strftime('%H:%M:%S', gmtime(int(duration / 2)))
     thumbnail_command = \
-       f'ffmpeg -v quiet -hide_banner -i {video.raw_video_file.name} ' \
+       f'ffmpeg -v quiet -hide_banner -i {raw_video_file.name} ' \
        f'-ss {thumbnail_timestamp}.000 -vframes 1 {video.folder_path}/thumb.jpg'
     subprocess.Popen(shlex.split(thumbnail_command)).wait()
 
@@ -88,6 +84,7 @@ def create_thumbnail(self, video_pk):
 def create_variants(self, video_pk):
     # get the upload object
     video = Video.objects.get(pk=video_pk)
+    raw_video_file = VideoChunkedUpload.objects.get(upload_id=video.upload_id).file
 
     # change to media directory
     os.chdir(settings.MEDIA_ROOT)
@@ -102,7 +99,7 @@ def create_variants(self, video_pk):
                 print('Height not evenly divisible by 120')
 
     # start ffmpeg command
-    command = f'ffmpeg -v quiet -i {video.raw_video_file.name} -progress - -c:a aac -ac 2 -c:v libx264 -crf 20 '
+    command = f'ffmpeg -v quiet -i {raw_video_file.name} -progress - -c:a aac -ac 2 -c:v libx264 -crf 20 '
 
     # working variables to build stream specific parts of command
     bitrates = ''
@@ -194,7 +191,12 @@ def create_variants(self, video_pk):
         video = Video.objects.select_for_update().get(pk=video_pk)
         video.processed = True
         video.master_playlist = os.path.join(video.folder_path, 'master.m3u8')
-        video.raw_video_file.delete()
         video.save()
     return
+
+@shared_task(bind=True)
+def cleanup_video_processing(self, video_pk):
+    # delete chunked upload
+    video = Video.objects.get(pk=video_pk)
+    VideoChunkedUpload.objects.get(upload_id=video.upload_id).delete()
 

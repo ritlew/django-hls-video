@@ -28,7 +28,9 @@ from sendfile import sendfile
 # local imports
 from .forms import VideoUploadForm
 from .models import Video, VideoCollection, VideoChunkedUpload
-from .tasks import setup_video_processing, create_thumbnail, create_variants
+from .tasks import (
+    setup_video_processing, create_thumbnail, create_variants, cleanup_video_processing
+)
 
 class VideoListView(ListView):
     model = Video
@@ -226,14 +228,15 @@ class VideoChunkedUploadCompleteView(ChunkedUploadCompleteView):
             group(
                 create_thumbnail.si(vid.pk),
                 create_variants.si(vid.pk)
-            )
+            ) |
+            cleanup_video_processing.si(vid.pk)
         )
 
         res = processing_tasks.delay()
         with transaction.atomic():
             vid = Video.objects.select_for_update().get(pk=vid.pk)
-            res.save()
-            vid.processing_id = res.id
+            res.parent.save()
+            vid.processing_id = res.parent.id
             vid.save()
 
         return JsonResponse({"message": "file upload success"})

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django_summernote.admin import SummernoteModelAdmin
 
-from .models import Video, VideoVariant, VideoCollection
+from .models import Video, VideoVariant, VideoCollection, VideoChunkedUpload
 
 
 class VideoInfoAdmin(SummernoteModelAdmin):
@@ -12,3 +12,4 @@ class VideoInfoAdmin(SummernoteModelAdmin):
 admin.site.register(VideoVariant)
 admin.site.register(Video, VideoInfoAdmin)
 admin.site.register(VideoCollection)
+admin.site.register(VideoChunkedUpload)
