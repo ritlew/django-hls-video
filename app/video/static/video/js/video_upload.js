@@ -1,5 +1,10 @@
 upload_id = null;
 $(document).ready(function() {
+    if (location.protocol === 'https:'){
+        UPLOAD_RATE = 1000000
+    } else {
+        UPLOAD_RATE = 10000000
+    }
     $('form :input').prop('disabled', true);
     $('form').hide();
     $('#upload_progress').hide();
@@ -46,7 +51,7 @@ $(document).ready(function() {
         url: "/video_file_upload/",
         dataType: "json",
         replaceFileInput: false,
-        maxChunkSize: 1000000, // 1 MB
+        maxChunkSize: UPLOAD_RATE,
         formData: [{"name": "csrfmiddlewaretoken", "value": csrf}],
         add: function (e, data) {
             data.submit();
@@ -87,8 +92,10 @@ $(document).ready(function() {
                 videoData = data.uploads.find(x => x.upload_id == upload_id);
                 if (videoData){
                     if (!videoData.processed){
-                        $("#processing_progress_bar").html(`Encoded ${videoData.current}s of ${videoData.total}s`);
-                        $("#processing_progress_bar").css("width", `${videoData.progress}%`);
+                        if (videoData.progress !== undefined){
+                            $("#processing_progress_bar").html(`Encoded ${videoData.current}s of ${videoData.total}s`);
+                            $("#processing_progress_bar").css("width", `${videoData.progress}%`);
+                        }
                     } else {
                         $("#processing_progress_bar").html(`Processing complete!`);
                         $("#processing_progress_bar").css("width", `100%`);

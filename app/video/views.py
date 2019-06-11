@@ -229,9 +229,9 @@ class VideoChunkedUploadCompleteView(ChunkedUploadCompleteView):
             )
         )
 
+        res = processing_tasks.delay()
         with transaction.atomic():
             vid = Video.objects.get(pk=vid.pk)
-            res = processing_tasks.delay()
             res.save()
             vid.processing_id = res.id
             vid.save()
