@@ -50,13 +50,6 @@ services:
             - redis
             - uwsgi
         restart: always
-    flower:
-        image: mher/flower
-        command: flower --broker=redis://redis:6379/0 --port=8888 --url-prefix=flower
-        depends_on:
-            - redis
-            - celery
-        restart: always
     daphne:
         image: dhv_app
         environment:
