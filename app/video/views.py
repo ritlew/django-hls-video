@@ -185,15 +185,15 @@ class DeleteVideoView(APIView):
         upload_id = self.kwargs.get('upload_id', None)
 
         if not upload_id:
-            messages.add_message(request, messages.INFO, f'Something went wrong. Try again later.')
+            messages.add_message(request, messages.ERROR, 'Something went wrong. Try again later.')
 
         try:
             video = Video.objects.get(upload_id=upload_id, user=request.user, processed=True)
+            messages.add_message(request, messages.INFO, f'{video.title} deleted.')
+            video.delete()
         except Video.DoesNotExist:
-            messages.add_message(request, messages.INFO, f'Something went wrong. Try again later.')
+            messages.add_message(request, messages.ERROR, 'Something went wrong. Try again later.')
 
-        messages.add_message(request, messages.INFO, f'{video.title} deleted.')
-        video.delete()
         return redirect('user_uploads')
 
 

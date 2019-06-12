@@ -14,23 +14,12 @@
     </style>
 {% endblock %}
 
+{% block page_title %}
+    Your Uploads
+{% endblock %}
+
 {% block main %}
-<div class="jumbotron py-4 mb-2">
-    <div class="container text-center">
-        <h1>Your Uploads</h1>
-    </div>
-</div>
 <div class="row mt-2">
-    {% if messages %}
-        {% for message in messages %}
-            <div class="col-md-12 alert alert-dismissible alert-info">
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
-                <span>
-                    <strong>{{ message }}</strong>
-                </span>
-            </div>
-        {% endfor %}
-    {% endif %}
     {# display videos #}
     <div class="col-lg-12">
         {% for vid in videos %}
@@ -80,9 +69,13 @@
                         <a class="btn btn-sm btn-info" href="{% url 'video_index' %}">
                             <i class="fas fa-edit"></i>
                         </a>
-                        <a class="btn btn-sm btn-danger {{ vid.processed|yesno:",disabled" }}" href="{% url 'delete_video' upload_id=vid.upload_id %}" 
-                           onclick="return confirm('Video deletion is permanent and irreversable.\n\nAre you sure you want to delete {{ vid.title }}?')"
-                           {% if not vid.processed %}
+                        <a class="btn btn-sm btn-danger {{ vid.processed|yesno:",disabled" }}"
+                           {% if vid.processed %}
+                               href="{% url 'delete_video' upload_id=vid.upload_id %}"
+                               onclick="return confirm('Video deletion is permanent and irreversable.\n\nAre you sure you want to delete {{ vid.title }}?')"
+                           {% else %}
+                               {# clickable but will not link anywhere #}
+                               href="javascript:;"
                                title="Deletion available once video has processed"
                            {% endif %}
                            >

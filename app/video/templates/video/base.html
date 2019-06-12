@@ -35,6 +35,23 @@
     </div>
 </nav>
 <div class="container">
+    <div class="jumbotron py-4 mb-2">
+        <div class="container text-center">
+            <h1>{% block page_title %}{% endblock %}</h1>
+        </div>
+    </div>
+    {% if messages %}
+        <div class="row">
+            {% for message in messages %}
+                <div class="col-md-12 {% if message.tags %}{{ message.tags }}{% endif %}">
+                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                    <span>
+                        <strong>{{ message }}</strong>
+                    </span>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
     {% block main %}
     {% endblock %}
 </div>
