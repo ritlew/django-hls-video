@@ -90,9 +90,9 @@ $(document).ready(function() {
             trackUploadProgress([upload_id], function(data){
                 videoData = data.uploads.find(x => x.upload_id == upload_id);
                 if (videoData){
-                    $('#processing_progress').slideDown();
                     if (!videoData.processed){
                         if (videoData.progress !== undefined){
+                            $('#processing_progress').slideDown();
                             $("#processing_progress_bar").html(`Encoded ${videoData.current}s of ${videoData.total}s`);
                             $("#processing_progress_bar").css("width", `${videoData.progress}%`);
                         }

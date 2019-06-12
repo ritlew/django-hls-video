@@ -155,8 +155,7 @@ class SubmitVideoUpload(APIView):
     def get(self, request, format=None):
         return render(request, self.template_name, {
             'form': VideoUploadForm(),
-            'websocket_protocol': settings.WEBSOCKET_PROTOCOL }
-        )
+        })
 
     def post(self, request, format=None):
         form = VideoUploadForm(request.POST)
@@ -179,16 +178,63 @@ class SubmitVideoUpload(APIView):
             return Response({'detail': 'Form data is not valid'}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class DeleteVideoView(APIView):
+class EditVideoInfoView(SubmitVideoUpload):
     permission_classes = (IsAuthenticated,)
+    template_name = 'video/edit_form.html'
     def get(self, request, *args, **kwargs):
-        upload_id = self.kwargs.get('upload_id', None)
+        slug = self.kwargs.get('slug', None)
 
-        if not upload_id:
+        if not slug:
             messages.add_message(request, messages.ERROR, 'Something went wrong. Try again later.')
 
         try:
-            video = Video.objects.get(upload_id=upload_id, user=request.user, processed=True)
+            video = Video.objects.get(slug=slug, user=request.user)
+            return render(request, self.template_name, {
+                'form': VideoUploadForm(instance=video),
+            })
+        except Video.DoesNotExist:
+            messages.add_message(request, messages.ERROR, 'Something went wrong. Try again later.')
+
+        return redirect('user_uploads')
+
+    def post(self, request, *args, **kwargs):
+        slug = self.kwargs.get('slug', None)
+        form = VideoUploadForm(request.POST)
+        if slug and form.is_valid():
+            upload_id = form.cleaned_data['upload_id']
+            try:
+                video = Video.objects.get(upload_id=upload_id, slug=slug, user=request.user)
+            except Video.DoesNotExist:
+                messages.add_message(request, messages.ERROR, 'Something went wrong. Try again later.')
+                redirect('user_uploads')
+
+            # if the videos title was the default title
+            if Video._meta.get_field('title').get_default() == video.title:
+                # nullify the slug so it can autopopulate again
+                video.slug = None
+
+            video.title = form.cleaned_data['title']
+            video.description = form.cleaned_data['description']
+            video.collections.set(form.cleaned_data['collections'])
+
+            video.save()
+            messages.add_message(request, messages.SUCCESS, f'{video.title} updated!')
+            return redirect('user_uploads')
+        else:
+            messages.add_message(request, messages.ERROR, 'Something went wrong. Try again later.')
+        return redirect('user_uploads')
+
+
+class DeleteVideoView(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request, *args, **kwargs):
+        slug = self.kwargs.get('slug', None)
+
+        if not slug:
+            messages.add_message(request, messages.ERROR, 'Something went wrong. Try again later.')
+
+        try:
+            video = Video.objects.get(slug=slug, user=request.user, processed=True)
             messages.add_message(request, messages.INFO, f'{video.title} deleted.')
             video.delete()
         except Video.DoesNotExist:

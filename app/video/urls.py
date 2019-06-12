@@ -15,7 +15,8 @@ urlpatterns = [
     ])),
     path('play/<slug:slug>/', views.VideoPlayerView.as_view(), name="video_player"),
     path('upload/', views.SubmitVideoUpload.as_view(), name="video_form"),
-    path('delete/<upload_id>/', views.DeleteVideoView.as_view(), name="delete_video"),
+    path('edit/<slug:slug>/', views.EditVideoInfoView.as_view(), name="edit_video"),
+    path('delete/<slug:slug>/', views.DeleteVideoView.as_view(), name="delete_video"),
     path('uploads/', views.UserUploadsView.as_view(), name="user_uploads"),
     path('api/colleciton_autocomplete/', views.CollectionAutocomplete.as_view(create_field='title'), name='api_collection_autocomplete'),
     path('video_file_upload/', include([
