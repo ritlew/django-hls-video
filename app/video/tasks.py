@@ -4,6 +4,7 @@ import os
 import shlex
 import subprocess
 import time
+import random
 
 from celery import shared_task
 from celery.result import allow_join_result
@@ -66,10 +67,12 @@ def create_thumbnail(self, video_pk):
     duration = int(float(video.vid_info['format']['duration']))
 
     # create thumbnail command for ffmpeg
-    thumbnail_timestamp = strftime('%H:%M:%S', gmtime(int(duration / 2)))
+    # take an image somewhere between 10% to 30% into the video
+    random_factor = random.uniform(.1, .3)
+    thumbnail_timestamp = strftime('%H:%M:%S', gmtime(int(duration * random_factor)))
     thumbnail_command = \
-       f'ffmpeg -v quiet -hide_banner -i {raw_video_file.name} ' \
-       f'-ss {thumbnail_timestamp}.000 -vframes 1 {video.folder_path}/thumb.jpg'
+       f'ffmpeg -v quiet -hide_banner -ss {thumbnail_timestamp} ' \
+       f'-i {raw_video_file.name} -vframes 1 {video.folder_path}/thumb.jpg'
     subprocess.Popen(shlex.split(thumbnail_command)).wait()
 
     with transaction.atomic():
