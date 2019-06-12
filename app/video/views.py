@@ -150,10 +150,10 @@ class GetVariantVideoView(GetVideoFileView):
 
 class SubmitVideoUpload(APIView):
     permission_classes = (IsAuthenticated,)
-    template_name = 'video/form.html'
+    template_name = 'video/upload_form.html'
 
-    def get(sef, request, format=None):
-        return render(request, 'video/form.html', {
+    def get(self, request, format=None):
+        return render(request, self.template_name, {
             'form': VideoUploadForm(),
             'websocket_protocol': settings.WEBSOCKET_PROTOCOL }
         )

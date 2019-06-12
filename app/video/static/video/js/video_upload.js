@@ -57,10 +57,10 @@ $(document).ready(function() {
             data.submit();
             $('form').slideDown();
             $('form :input').prop('disabled', false);
-            $('#upload_progress').slideDown();
         },
         chunkdone: function (e, data) {
             if (first) {
+                $('#upload_progress').slideDown();
                 first = false;
                 upload_id = data.result.upload_id;
                 request_data = {"name": "upload_id", "value": upload_id};
@@ -87,10 +87,10 @@ $(document).ready(function() {
                 },
                 dataType: "json",
             });
-            $('#processing_progress').slideDown();
             trackUploadProgress([upload_id], function(data){
                 videoData = data.uploads.find(x => x.upload_id == upload_id);
                 if (videoData){
+                    $('#processing_progress').slideDown();
                     if (!videoData.processed){
                         if (videoData.progress !== undefined){
                             $("#processing_progress_bar").html(`Encoded ${videoData.current}s of ${videoData.total}s`);

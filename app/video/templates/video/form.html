@@ -6,51 +6,23 @@
     <script src="{% static 'video/jquery_fileupload/vendor/jquery.ui.widget.js' %}"></script>
     <script src="{% static 'video/jquery_fileupload/jquery.fileupload.js' %}"></script>
     <script src="{% static 'video/jquery_fileupload/jquery.fileupload-ui.js' %}"></script>
-    <script src="{% static 'video/js/video_upload.js' %}"></script>
-    <script src="{% static 'video/js/upload_progress.js' %}"></script>
     {{ form.media }}
-    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/select2-bootstrap-theme/0.1.0-beta.10/select2-bootstrap.min.css" />
-<style>
-.custom-progress{
-    transition: width .5s linear;
-}
-</style>
-{% endblock %}
-
-{% block page_title %}
-    Upload a Video
 {% endblock %}
 
 {% block main %}
 <div class="row my-2">
     <div class="col-12">
-        <div class="form-group row">
-            <div class="col-md-12">
-                Video File
-                <input type="file" name="raw_video_file" class="form-control-file" id="raw_video_file">
-            </div>
-        </div>
-        <div id="progress-bars" class="form-group row">
-            <div id="upload_progress" class="col-md-12">
-                Upload Progress
-                <div id="upload_progress_bar" class="text-primary custom-progress progress-bar bg-info" role="progressbar" style="width: 0%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-            <div id="processing_progress" class="col-md-12">
-                Processing Progress
-                <div id="processing_progress_bar" class="text-primary custom-progress progress-bar bg-warning" role="progressbar" style="width: 0%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-        </div>
+        {% block before_form %}
+        {% endblock %}
         <div class="row">
-            <form class="col-md-12 expander" enctype="multipart/form-data" method="post">
+            <div class="col-md-12" id="submit-alerts">
+            </div>
+
+            <form class="col-md-12" enctype="multipart/form-data" method="post">
                 <div class="row">
                     <div class="col-md-12">
                         {{ form.non_field_errors }}
                     </div>
-                </div>
-                {# horizontal divder #}
-                <div class="border-top my-3"></div>
-
-                <div class="row expander" id="submit-alerts">
                 </div>
 
                 {% csrf_token %}
@@ -70,6 +42,8 @@
                 </div>
             </form>
         </div>
+        {% block after_form %}
+        {% endblock %}
     </div>
 </div>
 {% endblock %}
