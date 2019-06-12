@@ -45,10 +45,6 @@ class Video(models.Model):
     # the master playlist for the HLS variants video stream
     master_playlist = models.FileField(null=True)
     thumbnail = models.FileField(null=True)
-    raw_video_file = models.FileField(
-        null=True, # required for chunked upload
-        upload_to=os.path.join(settings.SENDFILE_REL_PATH, 'video/')
-    )
 
     @property
     def vid_info(self):
