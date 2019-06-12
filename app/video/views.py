@@ -1,8 +1,9 @@
 # Django imports
+from django.contrib import messages
 from django.conf import settings
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.views import View
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
@@ -23,6 +24,7 @@ from dal import autocomplete
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 from sendfile import sendfile
 
 # local imports
@@ -147,21 +149,16 @@ class GetVariantVideoView(GetVideoFileView):
 
 
 class SubmitVideoUpload(APIView):
+    permission_classes = (IsAuthenticated,)
     template_name = 'video/form.html'
 
     def get(sef, request, format=None):
-        if not request.user.is_authenticated:
-            raise Http404()
-
         return render(request, 'video/form.html', {
             'form': VideoUploadForm(),
             'websocket_protocol': settings.WEBSOCKET_PROTOCOL }
         )
 
     def post(self, request, format=None):
-        if not request.user.is_authenticated:
-            raise Http404()
-
         form = VideoUploadForm(request.POST)
         if form.is_valid():
             upload_id = form.cleaned_data['upload_id']
@@ -180,6 +177,24 @@ class SubmitVideoUpload(APIView):
             return Response({}, status=status.HTTP_201_CREATED)
         else:
             return Response({'detail': 'Form data is not valid'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DeleteVideoView(APIView):
+    permission_classes = (IsAuthenticated,)
+    def get(self, request, *args, **kwargs):
+        upload_id = self.kwargs.get('upload_id', None)
+
+        if not upload_id:
+            messages.add_message(request, messages.INFO, f'Something went wrong. Try again later.')
+
+        try:
+            video = Video.objects.get(upload_id=upload_id, user=request.user, processed=True)
+        except Video.DoesNotExist:
+            messages.add_message(request, messages.INFO, f'Something went wrong. Try again later.')
+
+        messages.add_message(request, messages.INFO, f'{video.title} deleted.')
+        video.delete()
+        return redirect('user_uploads')
 
 
 class UserUploadsView(ListView):

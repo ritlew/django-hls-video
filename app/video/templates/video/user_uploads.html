@@ -8,6 +8,9 @@
     .badge-large-text {
         font-size: 100%;
     }
+    a.btn.disabled {
+        pointer-events: auto;
+    }
     </style>
 {% endblock %}
 
@@ -18,6 +21,16 @@
     </div>
 </div>
 <div class="row mt-2">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="col-md-12 alert alert-dismissible alert-info">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                <span>
+                    <strong>{{ message }}</strong>
+                </span>
+            </div>
+        {% endfor %}
+    {% endif %}
     {# display videos #}
     <div class="col-lg-12">
         {% for vid in videos %}
@@ -67,7 +80,12 @@
                         <a class="btn btn-sm btn-info" href="{% url 'video_index' %}">
                             <i class="fas fa-edit"></i>
                         </a>
-                        <a class="btn btn-sm btn-danger" href="{% url 'video_index' %}">
+                        <a class="btn btn-sm btn-danger {{ vid.processed|yesno:",disabled" }}" href="{% url 'delete_video' upload_id=vid.upload_id %}" 
+                           onclick="return confirm('Video deletion is permanent and irreversable.\n\nAre you sure you want to delete {{ vid.title }}?')"
+                           {% if not vid.processed %}
+                               title="Deletion available once video has processed"
+                           {% endif %}
+                           >
                             <i class="fas fa-trash"></i>
                         </a>
                     </div>
@@ -75,55 +93,55 @@
             </div>
         </div>
         {% empty %}
-            <div class="col-lg-10 text-center">
+            <span class="text-center">
                 <h3>Oops! No videos found!</h3>
-            </div>
+            </span>
         {% endfor %}
 
-        {# pagination #}
-        <div class="row">
-            <div class="col-12">
-                <nav>
-                    <ul class="pagination justify-content-center">
-                        {# Previous / First links #}
-                        <li class="page-item {{ page_obj.has_previous|yesno:",disabled" }}">
-                            <a class="page-link" href="?page=1">First</a>
-                        </li>
-                        <li class="page-item {{ page_obj.has_previous|yesno:",disabled" }}">
-                            {% if page_obj.has_previous %}
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
-                            {% else %}
-                            <a class="page-link" href="?page=1">Previous</a>
-                            {% endif %}
-                        </li>
+            {# pagination #}
+            <div class="row">
+                <div class="col-12">
+                    <nav>
+                        <ul class="pagination justify-content-center">
+                            {# Previous / First links #}
+                            <li class="page-item {{ page_obj.has_previous|yesno:",disabled" }}">
+                                <a class="page-link" href="?page=1">First</a>
+                            </li>
+                            <li class="page-item {{ page_obj.has_previous|yesno:",disabled" }}">
+                                {% if page_obj.has_previous %}
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                                {% else %}
+                                <a class="page-link" href="?page=1">Previous</a>
+                                {% endif %}
+                            </li>
 
-                        {# Current pages #}
-                        {# https://stackoverflow.com/questions/30864011/display-only-some-of-the-page-numbers-by-django-pagination #}
-                        {% for pg in paginator.page_range %}
-                        <li class="page-item">
-                            {% if page_obj.number == pg %}
-                            <a href="?page={{ pg }}" class="page-link bg-info text-white">{{ pg }}</a>
-                            {# only display 2 pages forward and 2 pages backward #}
-                            {% elif page_obj.number|add:-2 <= pg and page_obj.number|add:2 >= pg %}
-                            <a href="?page={{ pg }}" class="page-link">{{ pg }}</a>
-                            {% endif %}
-                        </li>
-                        {% endfor %}
+                            {# Current pages #}
+                            {# https://stackoverflow.com/questions/30864011/display-only-some-of-the-page-numbers-by-django-pagination #}
+                            {% for pg in paginator.page_range %}
+                            <li class="page-item">
+                                {% if page_obj.number == pg %}
+                                <a href="?page={{ pg }}" class="page-link bg-info text-white">{{ pg }}</a>
+                                {# only display 2 pages forward and 2 pages backward #}
+                                {% elif page_obj.number|add:-2 <= pg and page_obj.number|add:2 >= pg %}
+                                <a href="?page={{ pg }}" class="page-link">{{ pg }}</a>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
 
-                        {# next / last links #}
-                        <li class="page-item {{ page_obj.has_next|yesno:",disabled" }}">
-                            {% if page_obj.has_next %}
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
-                            {% else %}
-                            <a class="page-link" href="?page={{ paginator.num_pages }}">Next</a>
-                            {% endif %}
-                        </li>
-                        <li class="page-item {{ page_obj.has_next|yesno:",disabled" }}">
-                            <a class="page-link" href="?page={{ paginator.num_pages }}">Last</a>
-                        </li>
-                        </span>
-                    </ul>
-                </nav>
+                            {# next / last links #}
+                            <li class="page-item {{ page_obj.has_next|yesno:",disabled" }}">
+                                {% if page_obj.has_next %}
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                                {% else %}
+                                <a class="page-link" href="?page={{ paginator.num_pages }}">Next</a>
+                                {% endif %}
+                            </li>
+                            <li class="page-item {{ page_obj.has_next|yesno:",disabled" }}">
+                                <a class="page-link" href="?page={{ paginator.num_pages }}">Last</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
             </div>
         </div>
     </div>
