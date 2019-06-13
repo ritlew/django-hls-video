@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 
 from chunked_upload.models import ChunkedUpload
 from autoslug import AutoSlugField
@@ -27,6 +27,7 @@ class Video(models.Model):
     collections = models.ManyToManyField(VideoCollection, related_name='videos')
     public = models.BooleanField(default=False)
     slug = AutoSlugField(populate_from='title', unique=True)
+    thumbnail = models.FileField(null=True)
 
     ### interal logic elements
     # ID from chunked upload
@@ -44,7 +45,31 @@ class Video(models.Model):
     processing_id = models.CharField(max_length=100, null=True)
     # the master playlist for the HLS variants video stream
     master_playlist = models.FileField(null=True)
-    thumbnail = models.FileField(null=True)
+
+    def __str__(self):
+        return self.slug
+
+    def begin_processing(self):
+        from .tasks import (
+            setup_video_processing, create_thumbnail, create_variants, cleanup_video_processing
+        )
+
+        processing_tasks = (
+            setup_video_processing.s(self.pk) |
+            group(
+                create_thumbnail.si(self.pk),
+                create_variants.si(self.pk)
+            ) |
+            cleanup_video_processing.si(self.pk)
+        )
+
+        res = processing_tasks.delay()
+        with transaction.atomic():
+            vid = Video.objects.select_for_update().get(pk=self.pk)
+            res.parent.save()
+            vid.processing_id = res.parent.id
+            vid.save()
+
 
     @property
     def vid_info(self):

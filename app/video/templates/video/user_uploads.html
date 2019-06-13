@@ -3,14 +3,11 @@
 {% load staticfiles %}
 
 {% block head %}
-    <script src="{% static 'video/js/upload_progress.js' %}"></script>
+    <script src="{% static 'video/js/processing_progress.js' %}"></script>
     <style>
-    .badge-large-text {
-        font-size: 100%;
-    }
-    a.btn.disabled {
-        pointer-events: auto;
-    }
+        a.btn.disabled {
+            pointer-events: auto;
+        }
     </style>
 {% endblock %}
 
@@ -142,11 +139,9 @@
 
 <script>
     var page_uploads = [
-        {% for vid in videos %}
-            "{{ vid.upload_id }}",
-        {% endfor %}
+        {% for vid in videos %}"{{ vid.upload_id }}", {% endfor %}
     ];
-    trackUploadProgress(page_uploads, function(data){
+    trackVideoProcessing(page_uploads, function(data){
         $.each(data.uploads, function(index, value){
             if (!value.processed){
                 if (value.progress !== undefined){

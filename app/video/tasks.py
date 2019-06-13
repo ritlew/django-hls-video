@@ -202,5 +202,5 @@ def create_variants(self, video_pk):
 def cleanup_video_processing(self, video_pk):
     # delete chunked upload
     video = Video.objects.get(pk=video_pk)
-    VideoChunkedUpload.objects.get(upload_id=video.upload_id).delete()
+    VideoChunkedUpload.objects.get(upload_id=video.upload_id).file.delete()
 

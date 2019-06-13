@@ -1,14 +1,13 @@
 # Django imports
-from django.contrib import messages
 from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db import transaction
 from django.shortcuts import render, redirect
-from django.views import View
-from django.views.generic.base import TemplateView
-from django.views.generic.edit import FormView
-from django.views.generic.list import ListView
+from django.views.generic.base import View, TemplateView
 from django.views.generic.detail import DetailView
+from django.views.generic.list import ListView
+from django.utils.decorators import method_decorator
 from django.http import (
     HttpResponse, JsonResponse, Http404, HttpResponseBadRequest, HttpResponseServerError
 )
@@ -21,18 +20,11 @@ import os
 from celery import group
 from chunked_upload.views import ChunkedUploadView, ChunkedUploadCompleteView
 from dal import autocomplete
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 from sendfile import sendfile
 
 # local imports
 from .forms import VideoUploadForm
 from .models import Video, VideoCollection, VideoChunkedUpload
-from .tasks import (
-    setup_video_processing, create_thumbnail, create_variants, cleanup_video_processing
-)
 
 class VideoListView(ListView):
     model = Video
@@ -97,8 +89,6 @@ class GetVideoFileView(VideoPlayerView):
     implement the get_filename() function and this class contains all other code to
     reply to the request with that file.
     """
-    queryset = Video.objects.filter()
-
     def get_filename(self):
         """
         This function needs to be implemented by subclasses.
@@ -112,6 +102,9 @@ class GetVideoFileView(VideoPlayerView):
 
 
 class GetVideoThumbnailView(GetVideoFileView):
+    # thumbnails can be accesed before video is fully processed
+    queryset = Video.objects.all()
+
     def get_filename(self):
         return self.get_object().thumbnail.name
 
@@ -148,8 +141,25 @@ class GetVariantVideoView(GetVideoFileView):
         return field.video_file.name
 
 
+@method_decorator(login_required, name='dispatch')
+class UserUploadsView(ListView):
+    model = Video
+    template_name = 'video/user_uploads.html'
+    context_object_name = 'videos'
+    paginate_by = 10
+
+    def get_queryset(self):
+        # if the user is requesting videos a specific collection
+        if not self.request.user.is_authenticated:
+            raise Http404()
+
+        video_results = Video.objects.filter(user=self.request.user).order_by("-pk")
+
+        return video_results
+
+
+@method_decorator(login_required, name='dispatch')
 class VideoFormView(TemplateView):
-    permission_classes = (IsAuthenticated,)
     template_name = 'video/upload_form.html'
 
     def get(self, request, *args, **kwargs):
@@ -194,13 +204,13 @@ class VideoFormView(TemplateView):
             return JsonResponse(form.errors, status=400)
 
 
+@method_decorator(login_required, name='dispatch')
 class EditVideoView(VideoFormView):
-    permission_classes = (IsAuthenticated,)
     template_name = 'video/edit_form.html'
 
 
-class DeleteVideoView(APIView):
-    permission_classes = (IsAuthenticated,)
+@method_decorator(login_required, name='dispatch')
+class DeleteVideoView(View):
     def get(self, request, *args, **kwargs):
         slug = self.kwargs.get('slug', None)
 
@@ -215,22 +225,6 @@ class DeleteVideoView(APIView):
             messages.add_message(request, messages.ERROR, 'Something went wrong. Try again later.')
 
         return redirect('user_uploads')
-
-
-class UserUploadsView(ListView):
-    model = Video
-    template_name = 'video/user_uploads.html'
-    context_object_name = 'videos'
-    paginate_by = 10
-
-    def get_queryset(self):
-        # if the user is requesting videos a specific collection
-        if not self.request.user.is_authenticated:
-            raise Http404()
-
-        video_results = Video.objects.filter(user=self.request.user).order_by("-pk")
-
-        return video_results
 
 
 # https://django-autocomplete-light.readthedocs.io/en/master/tutorial.html
@@ -265,23 +259,9 @@ class VideoChunkedUploadCompleteView(ChunkedUploadCompleteView):
     def on_completion(self, uploaded_file, request):
         vid, created = Video.objects.get_or_create(user=request.user, upload_id=request.POST.get("upload_id"))
 
-        processing_tasks = (
-            setup_video_processing.s(vid.pk) |
-            group(
-                create_thumbnail.si(vid.pk),
-                create_variants.si(vid.pk)
-            ) |
-            cleanup_video_processing.si(vid.pk)
-        )
+        vid.begin_processing()
 
-        res = processing_tasks.delay()
-        with transaction.atomic():
-            vid = Video.objects.select_for_update().get(pk=vid.pk)
-            res.parent.save()
-            vid.processing_id = res.parent.id
-            vid.save()
-
-        return JsonResponse({"message": "file upload success"})
+        return JsonResponse({})
 
 
     def get_response_data(self, chunked_upload, request):

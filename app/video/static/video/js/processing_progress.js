@@ -1,4 +1,4 @@
-function trackUploadProgress(upload_ids, callback, query_rate){
+function trackVideoProcessing(upload_ids, callback, query_rate){
     /* determine websocket protocol */
     /* https://stackoverflow.com/questions/414809/how-do-i-determine-whether-a-page-is-secure-via-javascript */
     if (location.protocol === 'https:'){
@@ -17,7 +17,6 @@ function trackUploadProgress(upload_ids, callback, query_rate){
         }
     }, query_rate);
 
-    /* Update UI on message */
     proSocket.onmessage = function(e){
         callback($.parseJSON(e.data));
     };
