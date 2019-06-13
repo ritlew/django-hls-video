@@ -57,6 +57,9 @@ $(document).ready(function() {
             data.submit();
             $('form').slideDown();
             $('form :input').prop('disabled', false);
+            $(window).on('beforeunload', function() {
+                return "A video upload is in progress. Navigating away will cause the upload to abort.\n\nAre you sure you want to stop uploading?";
+            });
         },
         chunkdone: function (e, data) {
             if (first) {
@@ -87,6 +90,7 @@ $(document).ready(function() {
                 },
                 dataType: "json",
             });
+            $(window).off('beforeunload');
             trackUploadProgress([upload_id], function(data){
                 videoData = data.uploads.find(x => x.upload_id == upload_id);
                 if (videoData){
