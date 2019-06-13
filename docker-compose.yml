@@ -37,7 +37,7 @@ services:
         restart: always
     celery:
         image: dhv_app
-        command: celery -A django_hls_video worker -l WARNING
+        command: celery -A django_hls_video worker -l WARNING -E
         environment:
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASSWORD}
