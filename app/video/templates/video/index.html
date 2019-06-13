@@ -10,12 +10,11 @@
 </style>
 {% endblock %}
 
+{% block page_title %}
+    Videos
+{% endblock %}
+
 {% block main %}
-<div class="jumbotron py-4 mb-2">
-    <div class="container text-center">
-        <h1>Videos</h1>      
-    </div>
-</div>
 <div class="row mt-2">
     {# sidebar #}
     <div class="col-lg-2">
@@ -58,7 +57,7 @@
                 </a>
                 <div class="text-white mb-1">
                     <div class="row align-items-center bg-dark h-25 py-2 mx-0">
-                        {% for c in vid.upload.collections.all %}
+                        {% for c in vid.collections.all %}
                         <a class="col-auto" href="{% url 'video_index' collection=c.slug %}">
                             <span class="badge badge-pill badge-secondary badge-large-text">{{ c.title }}</span>
                         </a>
@@ -67,8 +66,8 @@
                     <a href="{% url 'video_player' slug=vid.slug %}">
                         <div class="row text-white bg-primary h-75 mx-0">
                             <div class="card-body mw-100 pt-2 pb-0">
-                                <h4 class="card-title"><bold>{{ vid.upload.title }}</bold> - {{ vid.play_time }}</h4>
-                                <p class="text-truncate">{{ vid.upload.description }}</p>
+                                <h4 class="card-title"><bold>{{ vid.title }}</bold> - {{ vid.play_time }}</h4>
+                                <p class="text-truncate">{{ vid.description }}</p>
                             </div>
                         </div>
                     </a>
@@ -82,7 +81,6 @@
         </div>
 
         {# pagination #}
-        {% if is_paginated %}
         <div class="row">
             <div class="col-12">
                 <nav>
@@ -128,7 +126,6 @@
                 </nav>
             </div>
         </div>
-        {% endif %}
         {% endblock %}
     </div>
 </div>

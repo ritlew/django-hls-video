@@ -1,0 +1,36 @@
+{% extends 'video/form.html' %}
+
+{% load staticfiles %}
+
+{% block head %}
+    {{ block.super }}
+    <script src="{% static 'video/js/video_upload.js' %}"></script>
+    <script src="{% static 'video/js/processing_progress.js' %}"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/select2-bootstrap-theme/0.1.0-beta.10/select2-bootstrap.min.css" />
+{% endblock %}
+
+{% block page_title %}
+    Upload a Video
+{% endblock %}
+
+{% block before_form %}
+    <div class="form-group row">
+        <div class="col-md-12">
+            Video File
+            <input type="file" name="raw_video_file" class="form-control-file" id="raw_video_file">
+        </div>
+    </div>
+    <div id="progress-bars" class="form-group row">
+        <div id="upload_progress" class="col-md-12">
+            Upload Progress
+            <div id="upload_progress_bar" class="text-primary custom-progress progress-bar bg-info" role="progressbar" style="width: 0%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <div id="processing_progress" class="col-md-12">
+            Processing Progress
+            <div id="processing_progress_bar" class="text-primary custom-progress progress-bar bg-warning" role="progressbar" style="width: 0%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+    </div>
+
+    {# horizontal divder #}
+    <div class="border-top my-3"></div>
+{% endblock %}

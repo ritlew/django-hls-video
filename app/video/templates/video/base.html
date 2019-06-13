@@ -8,13 +8,13 @@
     <script src="{% static 'video/js/jquery-3.3.1.min.js' %}"></script>
     <script src="{% static 'video/js/bootstrap.js' %}"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ritlew.com</title>
+    <title>Django Video</title>
     {% block head %}
     {% endblock %}
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <a class="navbar-brand" href="{% url 'video_index' %}">ritlew</a>
+    <a class="navbar-brand" href="{% url 'video_index' %}">Django HLS Video</a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01"
             aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
@@ -22,16 +22,33 @@
 
     <div class="collapse navbar-collapse" id="navbarColor01">
         <ul class="navbar-nav mr-auto">
-            <li class="nav-item active">
-                <a class="nav-link" href="#">Home<span class="sr-only">(current)</span></a>
-            </li>
             <li class="nav-item">
                 <a class="nav-link" href="{% url 'video_index' %}">Videos</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'user_uploads' %}">Uploads</a>
             </li>
         </ul>
     </div>
 </nav>
 <div class="container">
+    <div class="jumbotron py-4 mb-2">
+        <div class="container text-center">
+            <h1>{% block page_title %}{% endblock %}</h1>
+        </div>
+    </div>
+    {% if messages %}
+        <div class="row">
+            {% for message in messages %}
+                <div class="col-md-12 {% if message.tags %}{{ message.tags }}{% endif %}">
+                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                    <span>
+                        <strong>{{ message }}</strong>
+                    </span>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
     {% block main %}
     {% endblock %}
 </div>

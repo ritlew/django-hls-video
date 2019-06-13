@@ -1,0 +1,158 @@
+{% extends 'video/base.html' %}
+
+{% load staticfiles %}
+
+{% block head %}
+    <script src="{% static 'video/js/processing_progress.js' %}"></script>
+    <style>
+        a.btn.disabled {
+            pointer-events: auto;
+        }
+    </style>
+{% endblock %}
+
+{% block page_title %}
+    Your Uploads
+{% endblock %}
+
+{% block main %}
+<div class="row mt-2">
+    {# display videos #}
+    <div class="col-lg-12">
+        {% for vid in videos %}
+        <div class="row border m-2">
+            <div class="col-md-5 my-2">
+                <a href="{% url 'video_player' slug=vid.slug %}">
+                    <img class="img-fluid" src="{% url 'get_thumbnail' slug=vid.slug %}">
+                </a>
+            </div>
+            <div class="col-md-7 my-2">
+                <div class="row">
+                    <div class="col-12">
+                        <h3 class="text-truncate">{{ vid.title }}</h3>
+                    </div>
+                </div>
+                {% if vid.vid_info_str %}
+                    <div class="row">
+                        <div class="col-12">
+                            {{ vid.play_time }}
+                        </div>
+                    </div>
+                {% endif %}
+                <div class="row">
+                    <div class="col-12">
+                        <p class="text-truncate">
+                            {% if vid.description %}
+                                {{ vid.description }}
+                            {% else %}
+                                <i>No Description</i>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% if not vid.processed %}
+                    <div class="row mb-1">
+                        <div id="{{ vid.upload_id }}" class="col-md-12">
+                            Processing Progress
+                            <div class="text-primary custom-progress progress-bar bg-warning" role="progressbar" style="width: 0%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                {% endif %}
+                <div class="row align-bottom">
+                    <div class="col-md-12">
+                        <a class="btn btn-sm btn-primary" href="{% url 'video_player' slug=vid.slug %}">
+                            <i class="fas fa-play"></i>
+                        </a>
+                        <a class="btn btn-sm btn-info" href="{% url 'edit_video' slug=vid.slug %}">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a class="btn btn-sm btn-danger {{ vid.processed|yesno:",disabled" }}"
+                           {% if vid.processed %}
+                               href="{% url 'delete_video' slug=vid.slug %}"
+                               onclick="return confirm('Video deletion is permanent and irreversable.\n\nAre you sure you want to delete {{ vid.title }}?')"
+                           {% else %}
+                               {# clickable but will not link anywhere #}
+                               href="javascript:;"
+                               title="Deletion available once video has processed"
+                           {% endif %}
+                           >
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+            <span class="text-center">
+                <h3>Oops! No videos found!</h3>
+            </span>
+        {% endfor %}
+
+            {# pagination #}
+            <div class="row">
+                <div class="col-12">
+                    <nav>
+                        <ul class="pagination justify-content-center">
+                            {# Previous / First links #}
+                            <li class="page-item {{ page_obj.has_previous|yesno:",disabled" }}">
+                                <a class="page-link" href="?page=1">First</a>
+                            </li>
+                            <li class="page-item {{ page_obj.has_previous|yesno:",disabled" }}">
+                                {% if page_obj.has_previous %}
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                                {% else %}
+                                <a class="page-link" href="?page=1">Previous</a>
+                                {% endif %}
+                            </li>
+
+                            {# Current pages #}
+                            {# https://stackoverflow.com/questions/30864011/display-only-some-of-the-page-numbers-by-django-pagination #}
+                            {% for pg in paginator.page_range %}
+                            <li class="page-item">
+                                {% if page_obj.number == pg %}
+                                <a href="?page={{ pg }}" class="page-link bg-info text-white">{{ pg }}</a>
+                                {# only display 2 pages forward and 2 pages backward #}
+                                {% elif page_obj.number|add:-2 <= pg and page_obj.number|add:2 >= pg %}
+                                <a href="?page={{ pg }}" class="page-link">{{ pg }}</a>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+
+                            {# next / last links #}
+                            <li class="page-item {{ page_obj.has_next|yesno:",disabled" }}">
+                                {% if page_obj.has_next %}
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                                {% else %}
+                                <a class="page-link" href="?page={{ paginator.num_pages }}">Next</a>
+                                {% endif %}
+                            </li>
+                            <li class="page-item {{ page_obj.has_next|yesno:",disabled" }}">
+                                <a class="page-link" href="?page={{ paginator.num_pages }}">Last</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var page_uploads = [
+        {% for vid in videos %}"{{ vid.upload_id }}", {% endfor %}
+    ];
+    trackVideoProcessing(page_uploads, function(data){
+        $.each(data.uploads, function(index, value){
+            if (!value.processed){
+                if (value.progress !== undefined){
+                    $(`#${value.upload_id} > .progress-bar`).html(`Encoded ${value.current}s of ${value.total}s`);
+                    $(`#${value.upload_id} > .progress-bar`).css("width", `${value.progress}%`);
+                }
+            } else {
+                $(`#${value.upload_id} > .progress-bar`).html(`Processing complete!`);
+                $(`#${value.upload_id} > .progress-bar`).css("width", `100%`);
+            }
+        });
+    }, 500);
+</script>
+{% endblock %}

@@ -4,6 +4,8 @@ import os
 import shlex
 import subprocess
 import time
+import random
+import logging
 
 from celery import shared_task
 from celery.result import allow_join_result
@@ -12,30 +14,25 @@ from django.db import transaction
 from itertools import filterfalse
 from time import strftime, gmtime
 
-from .models import VideoChunkedUpload, VideoUpload, Video, VideoVariant, RESOLUTIONS
+from .models import VideoChunkedUpload, Video, VideoVariant, RESOLUTIONS
 
 
 @shared_task(bind=True)
 def setup_video_processing(self, video_pk):
+    video = Video.objects.get(pk=video_pk)
+    raw_video_file = VideoChunkedUpload.objects.get(upload_id=video.upload_id).file
+
     # change to media directory
     os.chdir(settings.MEDIA_ROOT)
 
-    print("Saving video")
-    with transaction.atomic():
-        video = Video.objects.get(pk=video_pk)
-        chunked_upload = VideoChunkedUpload.objects.get(upload_id=video.upload.upload_id)
-        video.upload.raw_video_file = chunked_upload.get_uploaded_file()
-        video.upload.save()
-    print("Saving completed")
-
-    upload_filepath = video.upload.raw_video_file.name
+    upload_filepath = raw_video_file.name
 
     # create the video folder name
     folder_path = os.path.relpath(
         os.path.join(
             settings.SENDFILE_ROOT,
             'video',
-            os.path.splitext(os.path.basename(upload_filepath))[0] + f'_{video.upload.pk}'
+            os.path.splitext(os.path.basename(upload_filepath))[0] + f'_{video.pk}'
         )
     )
 
@@ -50,7 +47,7 @@ def setup_video_processing(self, video_pk):
 
     # save gained data to video object
     with transaction.atomic():
-        video = Video.objects.get(pk=video_pk)
+        video = Video.objects.select_for_update().get(pk=video_pk)
         video.vid_info_str = vid_info_str
         video.folder_path = folder_path
         video.save()
@@ -62,6 +59,7 @@ def setup_video_processing(self, video_pk):
 def create_thumbnail(self, video_pk):
     # get the upload object
     video = Video.objects.get(pk=video_pk)
+    raw_video_file = VideoChunkedUpload.objects.get(upload_id=video.upload_id).file
 
     # change to media directory
     os.chdir(settings.MEDIA_ROOT)
@@ -70,14 +68,16 @@ def create_thumbnail(self, video_pk):
     duration = int(float(video.vid_info['format']['duration']))
 
     # create thumbnail command for ffmpeg
-    thumbnail_timestamp = strftime('%H:%M:%S', gmtime(int(duration / 2)))
+    # take an image somewhere between 10% to 30% into the video
+    random_factor = random.uniform(.1, .3)
+    thumbnail_timestamp = strftime('%H:%M:%S', gmtime(int(duration * random_factor)))
     thumbnail_command = \
-       f'ffmpeg -v quiet -hide_banner -i {video.upload.raw_video_file.name} ' \
-       f'-ss {thumbnail_timestamp}.000 -vframes 1 {video.folder_path}/thumb.jpg'
+       f'ffmpeg -v quiet -hide_banner -ss {thumbnail_timestamp} ' \
+       f'-i {raw_video_file.name} -vframes 1 {video.folder_path}/thumb.jpg'
     subprocess.Popen(shlex.split(thumbnail_command)).wait()
 
     with transaction.atomic():
-        video = Video.objects.get(pk=video_pk)
+        video = Video.objects.select_for_update().get(pk=video_pk)
         video.thumbnail = os.path.join(video.folder_path, "thumb.jpg")
         video.save()
 
@@ -88,6 +88,7 @@ def create_thumbnail(self, video_pk):
 def create_variants(self, video_pk):
     # get the upload object
     video = Video.objects.get(pk=video_pk)
+    raw_video_file = VideoChunkedUpload.objects.get(upload_id=video.upload_id).file
 
     # change to media directory
     os.chdir(settings.MEDIA_ROOT)
@@ -102,7 +103,7 @@ def create_variants(self, video_pk):
                 print('Height not evenly divisible by 120')
 
     # start ffmpeg command
-    command = f'ffmpeg -v quiet -i {video.upload.raw_video_file.name} -progress - -c:a aac -ac 2 -c:v libx264 -crf 20 '
+    command = f'ffmpeg -v quiet -i {raw_video_file.name} -progress - -c:a aac -ac 2 -c:v libx264 -crf 20 '
 
     # working variables to build stream specific parts of command
     bitrates = ''
@@ -173,7 +174,7 @@ def create_variants(self, video_pk):
                 self.update_state(
                     state="P" + str(int(percent)),
                     meta={
-                        'progress': round(percent, 2),
+                        'progress': int(percent),
                         'current': int(current),
                         'total': duration
                     }
@@ -181,7 +182,7 @@ def create_variants(self, video_pk):
                 # update developer who doesn't want to be left in the dark
                 # while testing this encoding function for the 1000th time
                 # because one component isn't working quite right
-                print(f'{current}s of {duration}s, {percent}%')
+                logging.debug(f'{current}s of {duration}s, {percent}%')
 
     # remove audio-only variants from master playlist
     # as they won't play with videojs
@@ -191,10 +192,15 @@ def create_variants(self, video_pk):
     master.dump(master_playlist_filepath)
 
     with transaction.atomic():
-        video = Video.objects.get(pk=video_pk)
+        video = Video.objects.select_for_update().get(pk=video_pk)
         video.processed = True
         video.master_playlist = os.path.join(video.folder_path, 'master.m3u8')
-        video.upload.raw_video_file.delete()
         video.save()
     return
+
+@shared_task(bind=True)
+def cleanup_video_processing(self, video_pk):
+    # delete chunked upload
+    video = Video.objects.get(pk=video_pk)
+    VideoChunkedUpload.objects.get(upload_id=video.upload_id).file.delete()
 

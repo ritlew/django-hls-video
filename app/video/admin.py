@@ -1,15 +1,13 @@
 from django.contrib import admin
-from django_summernote.admin import SummernoteModelAdmin
 
-from .models import VideoUpload, Video, VideoVariant, VideoCollection
+from .models import Video, VideoVariant, VideoCollection, VideoChunkedUpload
 
 
-class VideoUploadAdmin(SummernoteModelAdmin):
-    summernote_fields = ('description',)
+class VideoInfoAdmin(admin.ModelAdmin):
     readonly_fields = ['upload_id']
 
 
-admin.site.register(VideoUpload, VideoUploadAdmin)
 admin.site.register(VideoVariant)
-admin.site.register(Video)
+admin.site.register(Video, VideoInfoAdmin)
 admin.site.register(VideoCollection)
+admin.site.register(VideoChunkedUpload)

@@ -14,8 +14,13 @@ urlpatterns = [
         ])),
     ])),
     path('play/<slug:slug>/', views.VideoPlayerView.as_view(), name="video_player"),
-    path('upload/', views.SubmitVideoUpload.as_view(), name="video_form"),
-    path('api/chunked_upload/', views.MyChunkedUploadView.as_view(), name='api_chunked_upload'),
-    path('api/chunked_upload_complete/', views.MyChunkedUploadCompleteView.as_view(), name='api_chunked_upload_complete'),
+    path('upload/', views.VideoFormView.as_view(), name="video_form"),
+    path('edit/<slug:slug>/', views.EditVideoView.as_view(), name="edit_video"),
+    path('delete/<slug:slug>/', views.DeleteVideoView.as_view(), name="delete_video"),
+    path('uploads/', views.UserUploadsView.as_view(), name="user_uploads"),
     path('api/colleciton_autocomplete/', views.CollectionAutocomplete.as_view(create_field='title'), name='api_collection_autocomplete'),
+    path('video_file_upload/', include([
+        path('', views.VideoChunkedUploadView.as_view(), name='video_chunked_upload'),
+        path('complete/', views.VideoChunkedUploadCompleteView.as_view(), name='video_chunked_upload_complete'),
+    ])),
 ]
