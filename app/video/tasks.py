@@ -5,6 +5,7 @@ import shlex
 import subprocess
 import time
 import random
+import logging
 
 from celery import shared_task
 from celery.result import allow_join_result
@@ -181,7 +182,7 @@ def create_variants(self, video_pk):
                 # update developer who doesn't want to be left in the dark
                 # while testing this encoding function for the 1000th time
                 # because one component isn't working quite right
-                print(f'{current}s of {duration}s, {percent}%')
+                logging.debug(f'{current}s of {duration}s, {percent}%')
 
     # remove audio-only variants from master playlist
     # as they won't play with videojs
