@@ -187,8 +187,7 @@ class VideoFormView(TemplateView):
                 video = Video.objects.get(user=request.user, upload_id=upload_id)
                 form = VideoUploadForm(request.POST, instance=video)
             except Video.DoesNotExist:
-                messages.add_message(request, messages.ERROR, 'Something went wrong. Try again later.')
-                return redirect('user_uploads')
+                form = VideoUploadForm(request.POST)
 
             vid = form.save(commit=False)
             vid.user = request.user
