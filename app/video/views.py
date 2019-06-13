@@ -10,7 +10,7 @@ from django.views.generic.edit import FormView
 from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
 from django.http import (
-    JsonResponse, Http404, HttpResponseBadRequest, HttpResponseServerError
+    HttpResponse, JsonResponse, Http404, HttpResponseBadRequest, HttpResponseServerError
 )
 
 # Python standard imports
@@ -148,81 +148,55 @@ class GetVariantVideoView(GetVideoFileView):
         return field.video_file.name
 
 
-class SubmitVideoUpload(APIView):
+class VideoFormView(TemplateView):
     permission_classes = (IsAuthenticated,)
     template_name = 'video/upload_form.html'
 
-    def get(self, request, format=None):
-        return render(request, self.template_name, {
-            'form': VideoUploadForm(),
-        })
-
-    def post(self, request, format=None):
-        form = VideoUploadForm(request.POST)
-        if form.is_valid():
-            upload_id = form.cleaned_data['upload_id']
-            vid, created = Video.objects.get_or_create(upload_id=upload_id, user=request.user)
-
-            # if the videos title was the default title
-            if Video._meta.get_field('title').get_default() == vid.title:
-                # nullify the slug so it can autopopulate again
-                vid.slug = None
-
-            vid.title = form.cleaned_data['title']
-            vid.description = form.cleaned_data['description']
-            vid.collections.set(form.cleaned_data['collections'])
-
-            vid.save()
-            return Response({}, status=status.HTTP_201_CREATED)
-        else:
-            return Response({'detail': 'Form data is not valid'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-class EditVideoInfoView(SubmitVideoUpload):
-    permission_classes = (IsAuthenticated,)
-    template_name = 'video/edit_form.html'
     def get(self, request, *args, **kwargs):
         slug = self.kwargs.get('slug', None)
 
-        if not slug:
-            messages.add_message(request, messages.ERROR, 'Something went wrong. Try again later.')
-
-        try:
-            video = Video.objects.get(slug=slug, user=request.user)
-            return render(request, self.template_name, {
-                'form': VideoUploadForm(instance=video),
-            })
-        except Video.DoesNotExist:
-            messages.add_message(request, messages.ERROR, 'Something went wrong. Try again later.')
-
-        return redirect('user_uploads')
-
-    def post(self, request, *args, **kwargs):
-        slug = self.kwargs.get('slug', None)
-        form = VideoUploadForm(request.POST)
-        if slug and form.is_valid():
-            upload_id = form.cleaned_data['upload_id']
+        if slug:
             try:
-                video = Video.objects.get(upload_id=upload_id, slug=slug, user=request.user)
+                video = Video.objects.get(user=request.user, slug=slug)
+                form = VideoUploadForm(instance=video)
             except Video.DoesNotExist:
                 messages.add_message(request, messages.ERROR, 'Something went wrong. Try again later.')
-                redirect('user_uploads')
-
-            # if the videos title was the default title
-            if Video._meta.get_field('title').get_default() == video.title:
-                # nullify the slug so it can autopopulate again
-                video.slug = None
-
-            video.title = form.cleaned_data['title']
-            video.description = form.cleaned_data['description']
-            video.collections.set(form.cleaned_data['collections'])
-
-            video.save()
-            messages.add_message(request, messages.SUCCESS, f'{video.title} updated!')
-            return redirect('user_uploads')
+                return redirect('user_uploads')
         else:
-            messages.add_message(request, messages.ERROR, 'Something went wrong. Try again later.')
-        return redirect('user_uploads')
+            form = VideoUploadForm()
+
+        return render(request, self.template_name, {'form': form})
+
+    def post(self, request, *args, **kwargs):
+        form = VideoUploadForm(request.POST)
+
+        if form.is_valid():
+
+            upload_id = form.cleaned_data.get('upload_id')
+            try:
+                video = Video.objects.get(user=request.user, upload_id=upload_id)
+                form = VideoUploadForm(request.POST, instance=video)
+            except Video.DoesNotExist:
+                messages.add_message(request, messages.ERROR, 'Something went wrong. Try again later.')
+                return redirect('user_uploads')
+
+            vid = form.save(commit=False)
+            vid.user = request.user
+            vid.save()
+            form.save_m2m()
+
+            if self.request.is_ajax():
+                return JsonResponse({}, status=201)
+            else:
+                messages.add_message(request, messages.SUCCESS, f'{vid.title} updated successfully!')
+                return redirect('user_uploads')
+        else:
+            return JsonResponse(form.errors, status=400)
+
+
+class EditVideoView(VideoFormView):
+    permission_classes = (IsAuthenticated,)
+    template_name = 'video/edit_form.html'
 
 
 class DeleteVideoView(APIView):

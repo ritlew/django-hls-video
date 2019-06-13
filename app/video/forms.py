@@ -28,6 +28,20 @@ class VideoUploadForm(forms.ModelForm):
 
         self.fields['upload_id'].label = ''
 
+    def save(self, commit=True):
+        old_video_title = self.instance.title
+        video = super().save(commit=False)
+
+        # if the videos title was the default title
+        if Video._meta.get_field('title').get_default() == old_video_title:
+            # nullify the slug so it can autopopulate again
+            video.slug = None
+
+        if commit:
+            video.save()
+
+        return video
+
 
     class Meta:
         model = Video
