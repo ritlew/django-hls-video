@@ -1,0 +1,7 @@
+.select2-container {
+    /* work-around as the select2 files initialize 
+     * the select2 dropdowns to fit the initial page
+     * width but do not resize the elements with the 
+     * page */
+    width: auto !important;
+}

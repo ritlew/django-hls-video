@@ -18,7 +18,6 @@ class VideoCollection(models.Model):
 
     def __str__(self):
         return self.title
-    
 
 class Video(models.Model):
     ### user facing elements
@@ -92,6 +91,15 @@ class VideoVariant(models.Model):
     # resolution that is an index of RESOLUTIONS defined at the top of this file
     resolution = models.SmallIntegerField()
 
+
+class VideoCollectionNumber(models.Model):
+    collection = models.ForeignKey(VideoCollection, null=False, on_delete=models.CASCADE)
+    video = models.ForeignKey(Video, null=False, on_delete=models.CASCADE)
+    number = models.IntegerField(null=False)
+
+    class Meta:
+        unique_together = [['collection', 'number']]
+    
 
 class VideoChunkedUpload(ChunkedUpload):
     pass

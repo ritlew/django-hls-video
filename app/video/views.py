@@ -23,7 +23,7 @@ from dal import autocomplete
 from sendfile import sendfile
 
 # local imports
-from .forms import VideoUploadForm
+from .forms import VideoUploadForm, VideoCollectionNumberForm
 from .models import Video, VideoCollection, VideoChunkedUpload
 
 class VideoListView(ListView):
@@ -204,6 +204,30 @@ class VideoFormView(TemplateView):
 
 
 @method_decorator(login_required, name='dispatch')
+class VideoCollectionNumberFormView(TemplateView):
+    template_name = 'video/edit_form.html'
+
+    def get(self, request, *args, **kwargs):
+        form = VideoCollectionNumberForm()
+
+        return render(request, self.template_name, {'form': form})
+
+    def post(self, request, *args, **kwargs):
+        form = VideoCollectionNumberForm(request.POST)
+
+        if form.is_valid():
+            form.save()
+
+            if self.request.is_ajax():
+                return JsonResponse({}, status=201)
+            else:
+                messages.add_message(request, messages.SUCCESS, 'Collection updated successfully!')
+                return redirect('user_uploads')
+        else:
+            return render(request, self.template_name, {'form': form})
+
+
+@method_decorator(login_required, name='dispatch')
 class EditVideoView(VideoFormView):
     template_name = 'video/edit_form.html'
 
@@ -233,6 +257,19 @@ class CollectionAutocomplete(autocomplete.Select2QuerySetView):
             return VideoCollection.objects.none()
 
         queryset = VideoCollection.objects.all().order_by('title')
+
+        if self.q:
+            queryset = queryset.filter(title__istartswith=self.q)
+
+        return queryset
+
+
+class VideoAutocomplete(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return Video.objects.none()
+
+        queryset = Video.objects.all().order_by('title')
 
         if self.q:
             queryset = queryset.filter(title__istartswith=self.q)

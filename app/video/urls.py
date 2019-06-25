@@ -18,7 +18,21 @@ urlpatterns = [
     path('edit/<slug:slug>/', views.EditVideoView.as_view(), name="edit_video"),
     path('delete/<slug:slug>/', views.DeleteVideoView.as_view(), name="delete_video"),
     path('uploads/', views.UserUploadsView.as_view(), name="user_uploads"),
-    path('api/colleciton_autocomplete/', views.CollectionAutocomplete.as_view(create_field='title'), name='api_collection_autocomplete'),
+    path('collection/', include([
+        path('edit/', views.VideoCollectionNumberFormView.as_view(), name='collection_edit'),
+    ])),
+    path('api/autocomplete/', include([
+        path(
+            'video/',
+            views.VideoAutocomplete.as_view(),
+            name='autocomplete_video'
+        ),
+        path(
+            'collection/',
+            views.CollectionAutocomplete.as_view(create_field='title'),
+            name='autocomplete_collection'
+        ),
+    ])),
     path('video_file_upload/', include([
         path('', views.VideoChunkedUploadView.as_view(), name='video_chunked_upload'),
         path('complete/', views.VideoChunkedUploadCompleteView.as_view(), name='video_chunked_upload_complete'),
