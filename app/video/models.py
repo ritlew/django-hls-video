@@ -95,7 +95,7 @@ class VideoVariant(models.Model):
 class VideoCollectionNumber(models.Model):
     collection = models.ForeignKey(VideoCollection, null=False, on_delete=models.CASCADE)
     video = models.ForeignKey(Video, null=False, on_delete=models.CASCADE)
-    number = models.IntegerField(null=False)
+    number = models.PositiveIntegerField(null=False)
 
     class Meta:
         unique_together = [['collection', 'number']]

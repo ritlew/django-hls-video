@@ -24,7 +24,7 @@ from sendfile import sendfile
 
 # local imports
 from .forms import VideoUploadForm, VideoCollectionNumberForm
-from .models import Video, VideoCollection, VideoChunkedUpload
+from .models import Video, VideoCollection, VideoChunkedUpload, VideoCollectionNumber
 
 class VideoListView(ListView):
     model = Video
@@ -63,7 +63,7 @@ class VideoListView(ListView):
         return context
 
 
-class VideoPlayerView(DetailView):
+class VideoDetailView(DetailView):
     model = Video
     queryset = Video.objects.filter(processed=True)
     template_name = 'video/video_player.html'
@@ -83,7 +83,46 @@ class VideoPlayerView(DetailView):
         return video
 
 
-class GetVideoFileView(VideoPlayerView):
+class VideoPlayerView(VideoDetailView):
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        slug = self.kwargs.get('slug')
+
+        try:
+            video = self.queryset.get(slug=slug)
+        except Video.DoesNotExist:
+            return context
+
+        next_videos = []
+        for collection in VideoCollection.objects.all():
+            try:
+                match = VideoCollectionNumber.objects.get(
+                    video=video,
+                    collection=collection
+                )
+            except VideoCollectionNumber.DoesNotExist:
+                # try next collection
+                continue
+
+            collection_videos = VideoCollectionNumber.objects.filter(
+                                    collection=match.collection,
+                                    number__gt=match.number
+                                ).order_by('number')
+
+            if collection_videos:
+                next_videos.append({
+                    'collection': collection,
+                    'video': collection_videos[0].video
+                })
+
+        print(next_videos)
+        if len(next_videos):
+            context['next_videos'] = next_videos
+        return context
+
+
+
+class GetVideoFileView(VideoDetailView):
     """
     Abstract view class to retreive a file for a specific video. Subclasses should
     implement the get_filename() function and this class contains all other code to
