@@ -11,6 +11,11 @@ import time
 
 RESOLUTIONS = [240, 360, 480, 720, 1080]
 
+TRUE_FALSE_CHOICES = (
+    (False, "No"),
+    (True, "Yes"),
+)
+
 class VideoCollection(models.Model):
     title = models.CharField(max_length=50)
     description = models.CharField(max_length=50, null=True)
@@ -24,7 +29,7 @@ class Video(models.Model):
     title = models.CharField(max_length=50, default='Untitled')
     description = models.TextField(default='')
     collections = models.ManyToManyField(VideoCollection, related_name='videos')
-    public = models.BooleanField(default=False)
+    public = models.BooleanField(default=False, choices=TRUE_FALSE_CHOICES)
     slug = AutoSlugField(populate_from='title', unique=True)
     thumbnail = models.FileField(null=True)
 

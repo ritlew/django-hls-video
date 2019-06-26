@@ -3,10 +3,6 @@ from dal import autocomplete
 
 from .models import Video, VideoCollectionNumber
 
-TRUE_FALSE_CHOICES = (
-    (False, "No"),
-    (True, "Yes"),
-)
 
 class BootstrapModelForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
@@ -22,10 +18,6 @@ class BootstrapModelForm(forms.ModelForm):
 class VideoUploadForm(BootstrapModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self.fields['public'] = forms.ChoiceField(
-            choices=TRUE_FALSE_CHOICES
-        )
 
         self.fields['collections'].widget.attrs.update({
             'data-theme': 'bootstrap',
