@@ -196,7 +196,7 @@ def create_variants(self, video_pk):
         video.processed = True
         video.master_playlist = os.path.join(video.folder_path, 'master.m3u8')
         video.save()
-    return
+
 
 @shared_task(bind=True)
 def cleanup_video_processing(self, video_pk):

@@ -10,5 +10,6 @@ app = Celery('django_hls_video')
 # Using a string here means the worker will not have to
 # pickle the object when using Windows.
 app.config_from_object('django.conf:settings', namespace='CELERY')
+app.conf.task_routes = {'video.tasks.create_variants': {'queue': 'encoding_queue'}}
 app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
 

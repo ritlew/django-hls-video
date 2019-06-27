@@ -57,7 +57,7 @@ $(document).ready(function() {
         url: "/video_file_upload/",
         dataType: "json",
         replaceFileInput: false,
-        maxChunkSize: 1000000, // 1 MB
+        maxChunkSize: 5000000, // 5 MB
         formData: [{"name": "csrfmiddlewaretoken", "value": csrf}],
         add: function (e, data) {
             data.submit();
@@ -119,6 +119,11 @@ $(document).ready(function() {
                             $('#processing_progress').slideDown();
                             $("#processing_progress_bar").html(`Encoded ${video_data.current}s of ${video_data.total}s`);
                             $("#processing_progress_bar").css("width", `${video_data.progress}%`);
+                        }
+                        else if (video_data.state === "PENDING"){
+                            $('#processing_progress').slideDown();
+                            $("#processing_progress_bar").html(`In queue`);
+                            $("#processing_progress_bar").css("width", `0%`);
                         }
                     } else {
                         $("#processing_progress_bar").html(`Processing complete!`);
