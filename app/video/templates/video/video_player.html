@@ -37,47 +37,54 @@
     </div>
 </div>
 <div class="row my-2">
-    <div class="col-md-12 my-2">
+    <div class="col-md-12 bg-primary my-2">
         <div style="height: auto" class="card text-white bg-primary">
-            <div class="card-header">{{ video.collection }}</div>
-            <div class="card-body">
-                <h4 class="card-title">{{ video.title }}</h4>
-                <ul class="list-group list-group-flush">
-                    {# <li class="list-group-item bg-dark">Length: 22:49</li> #}
-                    {# <li class="list-group-item bg-dark">Episode No: 1</li> #}
-                    <li class="list-group-item bg-dark">
-                        {{ video.description }}
-                    </li>
-                </ul>
-            </div>
+            <span class="list-group-item bg-dark mt-3">
+                <h3>{{ video.title }}</h3>
+                <li class="list-group-item text-primary my-2">
+                    {{ video.description }}
+                </li>
+            </span>
+            {% if in_collections %}
+                <span class="list-group-item bg-dark my-3">
+                    <h4>Collections</h4>
+                    <ul class="list-group">
+                        {% for collection in in_collections %}
+                            <li class="list-group-item text-primary">
+                                {{ collection.collection.title }} #{{ collection.number }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </li>
+            {% endif %}
         </div>
     </div>
 </div>
 {% if next_videos %}
-    <div class="row my-2 bg-dark">
-        <div class="text-center col-12 p-2">
-            <h3 class="text-white bg-primary p-2 mb-0">
-                Up next
-            </h3>
-        </div>
-        <div class="col-12">
+    <div class="row my-2 bg-primary">
+        <div class="col-md-12">
+            <div class="text-center my-3">
+                <h3 class="text-white bg-dark p-2 mb-0">
+                    Up next
+                </h3>
+            </div>
             <div class="row my-2">
-                {% for next_video in next_videos %}
+                {% for next_in_series in next_videos %}
                     <div class="col-md-4 mb-2">
                         <div class="row text-center mx-0 mb-2">
-                            <a class="btn btn-secondary w-100" href="{% url 'video_index' collection=next_video.collection.slug %}">
-                                {{ next_video.collection.title }}
-                            </a>
+                            <span class="col list-group-item text-primary" href="{% url 'video_index' collection=next_in_series.collection.slug %}">
+                                {{ next_in_series.collection.title }} #{{ next_in_series.number }}
+                            </span>
                         </div>
-                        <a href="{% url 'video_player' slug=next_video.video.slug %}">
-                            <img class="img-fluid" src="{% url 'get_thumbnail' slug=next_video.video.slug %}">
+                        <a href="{% url 'video_player' slug=next_in_series.video.slug %}">
+                            <img class="img-fluid" src="{% url 'get_thumbnail' slug=next_in_series.video.slug %}">
                         </a>
                         <div class="text-white mb-1">
-                            <a href="{% url 'video_player' slug=next_video.video.slug %}">
-                                <div class="row text-white bg-primary h-75 mx-0">
+                            <a style="text-decoration: none"  href="{% url 'video_player' slug=next_in_series.video.slug %}">
+                                <div class="row text-white bg-dark h-75 mx-0">
                                     <div class="card-body mw-100 pt-2 pb-0">
-                                        <h4 class="card-title"><bold>{{ next_video.video.title }}</bold> - {{ next_video.video.play_time }}</h4>
-                                        <p class="text-truncate">{{ next_video.video.description }}</p>
+                                        <h4 class="card-title"><bold>{{ next_in_series.video.title }}</bold> - {{ next_in_series.video.play_time }}</h4>
+                                        <p class="text-truncate">{{ next_in_series.video.description }}</p>
                                     </div>
                                 </div>
                             </a>

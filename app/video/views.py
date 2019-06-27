@@ -94,6 +94,7 @@ class VideoPlayerView(VideoDetailView):
             return context
 
         next_videos = []
+        in_collections = []
         for collection in VideoCollection.objects.all():
             try:
                 match = VideoCollectionNumber.objects.get(
@@ -104,20 +105,19 @@ class VideoPlayerView(VideoDetailView):
                 # try next collection
                 continue
 
+            in_collections.append(match)
             collection_videos = VideoCollectionNumber.objects.filter(
                                     collection=match.collection,
                                     number__gt=match.number
                                 ).order_by('number')
 
             if collection_videos:
-                next_videos.append({
-                    'collection': collection,
-                    'video': collection_videos[0].video
-                })
+                next_videos.append(collection_videos[0])
 
-        print(next_videos)
         if len(next_videos):
             context['next_videos'] = next_videos
+        if len(in_collections):
+            context['in_collections'] = in_collections
         return context
 
 
