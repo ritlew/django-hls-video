@@ -148,6 +148,10 @@
                     $(`#${value.upload_id} > .progress-bar`).html(`Encoded ${value.current}s of ${value.total}s`);
                     $(`#${value.upload_id} > .progress-bar`).css("width", `${value.progress}%`);
                 }
+                else if (value.state === "PENDING"){
+                    $(`#${value.upload_id} > .progress-bar`).html(`In queue`);
+                    $(`#${value.upload_id} > .progress-bar`).css("width", `0%`);
+                }
             } else {
                 $(`#${value.upload_id} > .progress-bar`).html(`Processing complete!`);
                 $(`#${value.upload_id} > .progress-bar`).css("width", `100%`);

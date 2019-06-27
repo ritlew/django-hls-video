@@ -60,17 +60,14 @@ class Video(models.Model):
 
         processing_tasks = (
             setup_video_processing.s(self.pk) |
-            group(
-                create_thumbnail.si(self.pk),
-                create_variants.si(self.pk)
-            ) |
+            create_thumbnail.si(self.pk) |
+            create_variants.si(self.pk) |
             cleanup_video_processing.si(self.pk)
         )
 
         res = processing_tasks.delay()
         with transaction.atomic():
             vid = Video.objects.select_for_update().get(pk=self.pk)
-            res.parent.save()
             vid.processing_id = res.parent.id
             vid.save()
 
