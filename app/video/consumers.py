@@ -1,5 +1,5 @@
 from channels.generic.websocket import WebsocketConsumer
-from celery.result import GroupResult
+from celery.result import AsyncResult
 from collections import namedtuple
 import json
 
@@ -30,7 +30,7 @@ class UploadProgressConsumer(WebsocketConsumer):
         currently_processing = []
         for video in processing_videos:
             if video.processing_id:
-                result = GroupResult.restore(video.processing_id)
+                result = AsyncResult(video.processing_id)
                 if result:
                     currently_processing.append(VideoResult(video, result))
 
@@ -43,17 +43,15 @@ class UploadProgressConsumer(WebsocketConsumer):
                 'title': item.video.title,
                 'slug': item.video.slug,
                 'processed': item.video.processed,
+                'state': item.task.state,
             }
-            # for all the results in the group
-            for results in item.task.results:
-                # if there is data for that task
-                if results.info:
-                    # put data in response
-                    response['uploads'].append({
-                        **item_info,
-                        **results.info
-                    })
-                    break
+
+            if item.task.info:
+                # put data in response
+                response['uploads'].append({
+                    **item_info,
+                    **item.task.info
+                })
             else:
                 response['uploads'].append(item_info)
 
