@@ -104,6 +104,9 @@ class VideoCollectionNumber(models.Model):
 
     class Meta:
         unique_together = [['collection', 'number']]
+
+    def __str__(self):
+        return f'{self.collection} #{self.number}: {self.video}'
     
 
 class VideoChunkedUpload(ChunkedUpload):
