@@ -9,11 +9,11 @@
 <script>
     $(document).ready(function(){
         var sortable = $("#sortable-videos").sortable({
+            scroll: true,
+            forceFallback: true,
             ghostClass: "bg-primary",
             dragClass: "bg-primary",
             animation: 150,
-            onSort: function(evt){
-            },
         });
 
         $("#save-btn").click(function(){
