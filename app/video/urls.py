@@ -19,7 +19,8 @@ urlpatterns = [
     path('delete/<slug:slug>/', views.DeleteVideoView.as_view(), name="delete_video"),
     path('uploads/', views.UserUploadsView.as_view(), name="user_uploads"),
     path('collection/', include([
-        path('edit/', views.VideoCollectionNumberFormView.as_view(), name='collection_edit'),
+        path('edit/', views.EditVideoCollectionView.as_view(), name='collection_edit'),
+        path('edit/<slug>/', views.EditVideoCollectionView.as_view(), name='collection_edit'),
     ])),
     path('api/autocomplete/', include([
         path(

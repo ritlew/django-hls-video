@@ -3,6 +3,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.shortcuts import render, redirect
 from django.views.generic.base import View, TemplateView
 from django.views.generic.detail import DetailView
@@ -243,27 +244,63 @@ class VideoFormView(TemplateView):
 
 
 @method_decorator(login_required, name='dispatch')
-class VideoCollectionNumberFormView(TemplateView):
-    template_name = 'video/edit_form.html'
+class EditVideoCollectionView(TemplateView):
+    template_name = 'video/manage_collection.html'
 
     def get(self, request, *args, **kwargs):
-        form = VideoCollectionNumberForm()
+        collection_slug = kwargs.get('slug', None)
+        if not collection_slug:
+            first = VideoCollection.objects.first()
+            return redirect('collection_edit', slug=first.slug)
 
-        return render(request, self.template_name, {'form': form})
+        video_results = VideoCollectionNumber.objects.filter(
+            collection__slug=collection_slug
+        ).order_by("number")
+        collections = VideoCollection.objects.all()
+
+        payload = {
+            'results': video_results,
+            'collections': collections,
+            'target': collection_slug
+        }
+
+        return render(request, self.template_name, payload)
 
     def post(self, request, *args, **kwargs):
-        form = VideoCollectionNumberForm(request.POST)
+        slugs = request.POST.getlist('slugs[]', None)
+        target = request.POST.get('target', None)
+        if slugs and target:
+            with transaction.atomic():
+                to_update = []
+                for i, slug in enumerate(slugs):
+                    try:
+                        vcn = VideoCollectionNumber.objects.select_for_update().get(
+                            collection__slug=target,
+                            video__slug=slug
+                        )
+                    except VideoCollectionNumber.DoesNotExist:
+                        messages.add_message(request, messages.ERROR, 'Something went wrong! Try again later.')
+                        return JsonResponse({}, status=500)
+                    vcn.number = i+1
+                    to_update.append(vcn)
 
-        if form.is_valid():
-            form.save()
+                # incredibly ugly trash, but I can't think of
+                # or find a better way to avoid the integrity
+                # error when reordering the collection right now
+                largest = max(to_update, key=lambda p: p.number).number
+                for vcn in to_update:
+                    vcn.number += largest
+                VideoCollectionNumber.objects.bulk_update(to_update, ['number'])
 
-            if self.request.is_ajax():
-                return JsonResponse({}, status=201)
-            else:
-                messages.add_message(request, messages.SUCCESS, 'Collection updated successfully!')
-                return redirect('user_uploads')
+                for vcn in to_update:
+                    vcn.number -= largest
+                VideoCollectionNumber.objects.bulk_update(to_update, ['number'])
         else:
-            return render(request, self.template_name, {'form': form})
+            messages.add_message(request, messages.ERROR, 'Something went wrong! Try again later.')
+            return JsonResponse({}, status=500)
+
+        messages.add_message(request, messages.SUCCESS, 'Collection updated successfully!')
+        return JsonResponse({}, status=200)
 
 
 @method_decorator(login_required, name='dispatch')

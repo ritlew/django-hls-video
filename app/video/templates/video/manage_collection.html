@@ -1,0 +1,126 @@
+{% extends 'video/base.html' %}
+
+{% load staticfiles %}
+
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.9.0/Sortable.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery-sortablejs@latest/jquery-sortable.js"></script>
+
+<script>
+    $(document).ready(function(){
+        var sortable = $("#sortable-videos").sortable({
+            ghostClass: "bg-primary",
+            dragClass: "bg-primary",
+            animation: 150,
+            onSort: function(evt){
+            },
+        });
+
+        $("#save-btn").click(function(){
+            ordered_slugs = $("#sortable-videos").find(".slug").map(function(){
+                return $(this).val();
+            }).get();
+
+            $.ajax({
+                method: "POST",
+                dataType: "json",
+                data: {
+                    slugs: ordered_slugs, 
+                    csrfmiddlewaretoken: "{{ csrf_token }}",
+                    target: "{{ target }}",
+                }
+            });
+            $.each($("#sortable-videos").children(), function(index, value){
+                $(value).find('.position').html(index+1);
+            });
+        });
+    });
+</script>
+<style>
+    .drag-cursor {
+        cursor: grab;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}
+    Manage Collections
+{% endblock %}
+
+{% block main %}
+<div class="row my-2">
+    <div class="col-md-3">
+        {# Video upload button #}
+        {% if request.user.is_staff or request.user.is_superuser %}
+        <div class="text-center mb-2">
+            <button id="save-btn" class="btn btn-primary w-100">Save Current</a>
+        </div>
+        {% endif %}
+        {# collections nav #}
+        {% if collections %}
+            <div class="list-group sticky-top mb-2">
+                <a class="list-group-item list-group-item-action active">
+                    Collections
+                </a>
+                {% for c in collections %}
+                    {% if target == c.slug %}
+                        <a href="{% url 'collection_edit' slug=c.slug %}" 
+                           class="list-group-item list-group-item-action bg-info text-white">
+                            {{ c.title }}
+                        </a>
+                    {% else %}
+                        <a href="{% url 'collection_edit' slug=c.slug %}" 
+                           class="list-group-item list-group-item-action">
+                            {{ c.title }}
+                        </a>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+    <div class="col-md-9">
+        <ul id="sortable-videos" class="list-group">
+            {% for result in results %}
+                <li class="list-group-item drag-cursor">
+                    <div class="row">
+                        <div class="col-md-2 text-center my-auto">
+                            <input class="slug" type="hidden" value="{{ result.video.slug }}">
+                            <h1 class="position text-primary">{{ result.number }}</h1>
+                        </div>
+                        <div class="col-md-4 my-2">
+                            <a href="{% url 'video_player' slug=result.video.slug %}">
+                                <img class="img-fluid" src="{% url 'get_thumbnail' slug=result.video.slug %}">
+                            </a>
+                        </div>
+                        <div class="col-md-6 my-2">
+                            <div class="row">
+                                <div class="col-12">
+                                    <h3 class="text-primary text-truncate">{{ result.video.title }}</h3>
+                                </div>
+                            </div>
+                            {% if result.video.vid_info_str %}
+                                <div class="row">
+                                    <div class="col-12">
+                                        {{ result.video.play_time }}
+                                    </div>
+                                </div>
+                            {% endif %}
+                            <div class="row">
+                                <div class="col-12">
+                                    <p class="text-truncate">
+                                        {% if result.video.description %}
+                                            {{ result.video.description }}
+                                        {% else %}
+                                            <i>No Description</i>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

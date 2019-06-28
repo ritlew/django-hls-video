@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models, transaction
+from django.db.models.signals import m2m_changed
 
 from chunked_upload.models import ChunkedUpload
 from autoslug import AutoSlugField
@@ -71,7 +72,6 @@ class Video(models.Model):
             vid.processing_id = res.parent.id
             vid.save()
 
-
     @property
     def vid_info(self):
         return json.loads(self.vid_info_str)
@@ -82,6 +82,29 @@ class Video(models.Model):
         play_time_format = "%-H:%M:%S" if duration >= (60 * 60) else "%-M:%S"
         return time.strftime(play_time_format,  time.gmtime(duration))
 
+
+def collections_changed(sender, **kwargs):
+    if kwargs['action'] == 'post_add':
+        video = kwargs['instance']
+        c_pks = kwargs['pk_set']
+
+        for c_pk in c_pks:
+            collection = VideoCollection.objects.get(pk=c_pk)
+            next_available = VideoCollectionNumber.objects.filter(
+                collection=collection
+            ).aggregate(models.Max('number'))['number__max']
+            if next_available:
+                next_available += 1
+            else:
+                next_available = 1
+            vcn = VideoCollectionNumber(
+                collection=VideoCollection.objects.get(pk=c_pk),
+                video=video,
+                number=next_available
+            )
+            vcn.save()
+
+m2m_changed.connect(collections_changed, sender=Video.collections.through)
 
 class VideoVariant(models.Model):
     # Video that has the common information for this variant
