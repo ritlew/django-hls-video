@@ -1,13 +1,12 @@
 FROM python:3.6.8-alpine
 ENV PYTHONBUFFERED 1
 
-RUN apk update && apk add git postgresql-dev linux-headers alpine-sdk coreutils git nasm x264-dev bash
+RUN apk update && apk add git postgresql-dev linux-headers alpine-sdk coreutils git nasm x264-dev libffi-dev
 
 # FFMPEG 4.1 clone and build
 WORKDIR /opt
-RUN git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg
+RUN git clone --single-branch --branch release/4.1 https://git.ffmpeg.org/ffmpeg.git ffmpeg
 WORKDIR /opt/ffmpeg
-RUN git checkout release/4.1
 RUN ./configure --enable-gpl --enable-libx264 --prefix=/usr && make -j4 && make install
 
 # django project
