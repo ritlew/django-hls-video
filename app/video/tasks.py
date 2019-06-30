@@ -193,7 +193,6 @@ def create_variants(self, video_pk):
 
     with transaction.atomic():
         video = Video.objects.select_for_update().get(pk=video_pk)
-        video.processed = True
         video.master_playlist = os.path.join(video.folder_path, 'master.m3u8')
         video.save()
 
@@ -201,6 +200,10 @@ def create_variants(self, video_pk):
 @shared_task(bind=True)
 def cleanup_video_processing(self, video_pk):
     # delete chunked upload
-    video = Video.objects.get(pk=video_pk)
-    VideoChunkedUpload.objects.get(upload_id=video.upload_id).file.delete()
+    with transaction.atomic():
+        video = Video.objects.select_for_update().get(pk=video_pk)
+        VideoChunkedUpload.objects.get(upload_id=video.upload_id).file.delete()
+        video.processing_id = None
+        video.processed = True
+        video.save()
 

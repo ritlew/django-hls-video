@@ -55,22 +55,25 @@ class Video(models.Model):
         return self.slug
 
     def begin_processing(self):
-        from .tasks import (
-            setup_video_processing, create_thumbnail, create_variants, cleanup_video_processing
-        )
+        if not self.processing_id:
+            from .tasks import (
+                setup_video_processing, create_thumbnail, create_variants, cleanup_video_processing
+            )
 
-        processing_tasks = (
-            setup_video_processing.s(self.pk) |
-            create_thumbnail.si(self.pk) |
-            create_variants.si(self.pk) |
-            cleanup_video_processing.si(self.pk)
-        )
+            processing_tasks = (
+                setup_video_processing.s(self.pk) |
+                create_thumbnail.si(self.pk) |
+                create_variants.si(self.pk) |
+                cleanup_video_processing.si(self.pk)
+            )
 
-        res = processing_tasks.delay()
-        with transaction.atomic():
-            vid = Video.objects.select_for_update().get(pk=self.pk)
-            vid.processing_id = res.parent.id
-            vid.save()
+            res = processing_tasks.delay()
+            with transaction.atomic():
+                vid = Video.objects.select_for_update().get(pk=self.pk)
+                vid.processing_id = res.parent.id
+                vid.save()
+        else:
+            logging.error(f'{self.title}:{self.pk} attempted to process again while processing')
 
     @property
     def vid_info(self):
