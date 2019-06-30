@@ -17,6 +17,7 @@ urlpatterns = [
     path('upload/', views.VideoFormView.as_view(), name="video_form"),
     path('edit/<slug:slug>/', views.EditVideoView.as_view(), name="edit_video"),
     path('delete/<slug:slug>/', views.DeleteVideoView.as_view(), name="delete_video"),
+    path('download/<slug:slug>/', views.DownloadVideoView.as_view(), name="download_video"),
     path('uploads/', views.UserUploadsView.as_view(), name="user_uploads"),
     path('collection/', include([
         path('edit/', views.EditVideoCollectionView.as_view(), name='collection_edit'),

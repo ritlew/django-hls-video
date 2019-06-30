@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.shortcuts import render, redirect
+from django.views.decorators.http import require_POST
 from django.views.generic.base import View, TemplateView
 from django.views.generic.detail import DetailView
 from django.views.generic.list import ListView
@@ -16,6 +17,8 @@ from django.http import (
 # Python standard imports
 import json
 import os
+import shlex
+import subprocess
 
 # third-party imports
 from celery import group
@@ -25,7 +28,7 @@ from sendfile import sendfile
 
 # local imports
 from .forms import VideoUploadForm, VideoCollectionNumberForm
-from .models import Video, VideoCollection, VideoChunkedUpload, VideoCollectionNumber
+from .models import Video, VideoCollection, VideoChunkedUpload, VideoCollectionNumber, RESOLUTIONS
 
 class VideoListView(ListView):
     model = Video
@@ -67,7 +70,6 @@ class VideoListView(ListView):
 class VideoDetailView(DetailView):
     model = Video
     queryset = Video.objects.filter(processed=True)
-    template_name = 'video/video_player.html'
 
     def get_object(self):
         slug = self.kwargs.get('slug')
@@ -85,6 +87,7 @@ class VideoDetailView(DetailView):
 
 
 class VideoPlayerView(VideoDetailView):
+    template_name = 'video/video_player.html'
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         slug = self.kwargs.get('slug')
@@ -114,6 +117,12 @@ class VideoPlayerView(VideoDetailView):
 
             if collection_videos:
                 next_videos.append(collection_videos[0])
+
+        variants = video.variants.all().order_by('resolution')
+        context['download_options'] = []
+        for i, resolution in enumerate(RESOLUTIONS):
+            context['download_options'].append({'resolution': resolution, 'value': i})
+        context['download_options'].reverse()
 
         if len(next_videos):
             context['next_videos'] = next_videos
@@ -168,6 +177,40 @@ class GetVariantPlaylistView(GetVideoFileView):
             raise Http404()
 
         return field.playlist_file.name
+
+
+@method_decorator(login_required, name='dispatch')
+@method_decorator(require_POST, name='dispatch')
+class DownloadVideoView(VideoDetailView):
+    def post(self, request, *args, **kwargs):
+        video = self.get_object()
+        try:
+            resolution = int(request.POST.get('resolution', None)[0])
+        except:
+            return HttpResponseBadRequest()
+
+        # audio only variant
+        audio_variant = video.variants.all().order_by('-resolution')[0]
+        try:
+            # selected video quality variant
+            video_variant = video.variants.get(resolution=resolution)
+        except VideoVariant.DoesNotExist:
+            raise HttpResponseServerError()
+
+        video_filepath = os.path.join(settings.MEDIA_ROOT, video_variant.video_file.name)
+        audio_filepath = os.path.join(settings.MEDIA_ROOT, audio_variant.video_file.name)
+
+        # combine audio with video and pipe to variable for transmission
+        command = \
+            f'ffmpeg -v quiet -i {video_filepath} -i {audio_filepath} ' \
+            f'-map 0:v:0 -map 1:a:0 -c copy -f matroska -'
+
+        file_data = subprocess.check_output(shlex.split(command))
+
+        response = HttpResponse(file_data, content_type="video/x-matroska")
+        response['Content-Disposition'] = f'inline; filename={video.title}.mkv'
+
+        return response
 
 
 class GetVariantVideoView(GetVideoFileView):
