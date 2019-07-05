@@ -3,7 +3,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db import transaction
+from django.db import transaction, DatabaseError
 from django.shortcuts import render, redirect
 from django.views.decorators.http import require_POST
 from django.views.generic.base import View, TemplateView
@@ -27,8 +27,8 @@ from dal import autocomplete
 from sendfile import sendfile
 
 # local imports
-from .forms import VideoUploadForm, VideoCollectionNumberForm
-from .models import Video, VideoCollection, VideoChunkedUpload, VideoCollectionNumber, RESOLUTIONS
+from .forms import VideoUploadForm
+from .models import Video, VideoCollection, VideoChunkedUpload, VideoCollectionOrder, RESOLUTIONS
 
 class VideoListView(ListView):
     model = Video
@@ -101,22 +101,23 @@ class VideoPlayerView(VideoDetailView):
         in_collections = []
         for collection in VideoCollection.objects.all():
             try:
-                match = VideoCollectionNumber.objects.get(
+                match = VideoCollectionOrder.objects.get(
                     video=video,
                     collection=collection
                 )
-            except VideoCollectionNumber.DoesNotExist:
+            except VideoCollectionOrder.DoesNotExist:
                 # try next collection
                 continue
 
             in_collections.append(match)
-            collection_videos = VideoCollectionNumber.objects.filter(
-                                    collection=match.collection,
-                                    number__gt=match.number
-                                ).order_by('number')
+            collection_videos = VideoCollectionOrder.objects.filter(
+                collection=match.collection,
+                video__processed=True,
+                order__gt=match.order,
+            )
 
             if collection_videos:
-                next_videos.append(collection_videos[0])
+                next_videos.append(collection_videos.first())
 
         variants = video.variants.all().order_by('resolution')
         context['download_options'] = []
@@ -268,14 +269,12 @@ class VideoFormView(TemplateView):
             upload_id = form.cleaned_data.get('upload_id')
             try:
                 video = Video.objects.get(user=request.user, upload_id=upload_id)
-                form = VideoUploadForm(request.POST, instance=video)
             except Video.DoesNotExist:
-                form = VideoUploadForm(request.POST)
+                video = Video(user=request.user)
 
-            vid = form.save(commit=False)
-            vid.user = request.user
-            vid.save()
-            form.save_m2m()
+            form = VideoUploadForm(request.POST, instance=video)
+
+            vid = form.save()
 
             if self.request.is_ajax():
                 return JsonResponse({}, status=201)
@@ -296,9 +295,9 @@ class EditVideoCollectionView(TemplateView):
             first = VideoCollection.objects.first()
             return redirect('collection_edit', slug=first.slug)
 
-        video_results = VideoCollectionNumber.objects.filter(
+        video_results = VideoCollectionOrder.objects.filter(
             collection__slug=collection_slug
-        ).order_by("number")
+        )
         collections = VideoCollection.objects.all()
 
         payload = {
@@ -312,33 +311,29 @@ class EditVideoCollectionView(TemplateView):
     def post(self, request, *args, **kwargs):
         slugs = request.POST.getlist('slugs[]', None)
         target = request.POST.get('target', None)
-        if slugs and target:
+
+        if not slugs or not target:
+            messages.add_message(request, messages.ERROR, 'Something went wrong! Try again later.')
+            return JsonResponse({}, status=500)
+
+        # get all requested vcns
+        try:
+            vcns = VideoCollectionOrder.objects.select_for_update().filter(
+                collection__slug=target,
+                video__slug__in=slugs,
+            )
+        except VideoCollectionOrder.DoesNotExist:
+            messages.add_message(request, messages.ERROR, 'Something went wrong! Try again later.')
+            return JsonResponse({}, status=500)
+
+        # reorder selected vcns
+        try:
             with transaction.atomic():
-                to_update = []
                 for i, slug in enumerate(slugs):
-                    try:
-                        vcn = VideoCollectionNumber.objects.select_for_update().get(
-                            collection__slug=target,
-                            video__slug=slug
-                        )
-                    except VideoCollectionNumber.DoesNotExist:
-                        messages.add_message(request, messages.ERROR, 'Something went wrong! Try again later.')
-                        return JsonResponse({}, status=500)
-                    vcn.number = i+1
-                    to_update.append(vcn)
-
-                # incredibly ugly trash, but I can't think of
-                # or find a better way to avoid the integrity
-                # error when reordering the collection right now
-                largest = max(to_update, key=lambda p: p.number).number
-                for vcn in to_update:
-                    vcn.number += largest
-                VideoCollectionNumber.objects.bulk_update(to_update, ['number'])
-
-                for vcn in to_update:
-                    vcn.number -= largest
-                VideoCollectionNumber.objects.bulk_update(to_update, ['number'])
-        else:
+                    vcn = vcns.get(video__slug=slug)
+                    # reorder all videos in collection
+                    vcn.bottom()
+        except DatabaseError:
             messages.add_message(request, messages.ERROR, 'Something went wrong! Try again later.')
             return JsonResponse({}, status=500)
 

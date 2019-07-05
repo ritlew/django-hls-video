@@ -1,7 +1,7 @@
 from django import forms
 from dal import autocomplete
 
-from .models import Video, VideoCollectionNumber
+from .models import Video
 
 
 class BootstrapModelForm(forms.ModelForm):
@@ -35,7 +35,7 @@ class VideoUploadForm(BootstrapModelForm):
             video.slug = None
 
         if commit:
-            video.save()
+            video = super().save(commit=True)
 
         return video
 
@@ -45,26 +45,7 @@ class VideoUploadForm(BootstrapModelForm):
         fields = ['title', 'description', 'collections', 'public', 'upload_id']
         widgets = {
             'collections': autocomplete.ModelSelect2Multiple(url='autocomplete_collection'),
-            'upload_id': forms.HiddenInput()
+            'upload_id': forms.HiddenInput(),
         }
 
-
-class VideoCollectionNumberForm(BootstrapModelForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.fields['collection'].widget.attrs.update({
-            'data-theme': 'bootstrap',
-        })
-        self.fields['video'].widget.attrs.update({
-            'data-theme': 'bootstrap',
-        })
-
-    class Meta:
-        model = VideoCollectionNumber
-        fields = ['collection', 'video', 'number']
-        widgets = {
-            'collection': autocomplete.ModelSelect2(url='autocomplete_collection'),
-            'video': autocomplete.ModelSelect2(url='autocomplete_video'),
-        }
 

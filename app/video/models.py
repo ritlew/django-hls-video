@@ -1,10 +1,13 @@
 from django.conf import settings
 from django.db import models, transaction
-from django.db.models.signals import m2m_changed
+from django.db.models import Max
+from django.db.models.signals import post_init
+from django.dispatch import receiver
 
-from chunked_upload.models import ChunkedUpload
 from autoslug import AutoSlugField
 from celery import group
+from chunked_upload.models import ChunkedUpload
+from ordered_model.models import OrderedModel
 
 import json
 import os
@@ -17,6 +20,7 @@ TRUE_FALSE_CHOICES = (
     (True, "Yes"),
 )
 
+
 class VideoCollection(models.Model):
     title = models.CharField(max_length=50)
     description = models.CharField(max_length=50, null=True)
@@ -25,14 +29,19 @@ class VideoCollection(models.Model):
     def __str__(self):
         return self.title
 
+
 class Video(models.Model):
     ### user facing elements
     title = models.CharField(max_length=50, default='Untitled')
     description = models.TextField(default='')
-    collections = models.ManyToManyField(VideoCollection, related_name='videos')
     public = models.BooleanField(default=False, choices=TRUE_FALSE_CHOICES)
     slug = AutoSlugField(populate_from='title', unique=True)
     thumbnail = models.FileField(null=True)
+    collections = models.ManyToManyField(
+        VideoCollection,
+        related_name='videos',
+        through='video.VideoCollectionOrder',
+    )
 
     ### interal logic elements
     # ID from chunked upload
@@ -86,29 +95,6 @@ class Video(models.Model):
         return time.strftime(play_time_format,  time.gmtime(duration))
 
 
-def collections_changed(sender, **kwargs):
-    if kwargs['action'] == 'post_add':
-        video = kwargs['instance']
-        c_pks = kwargs['pk_set']
-
-        for c_pk in c_pks:
-            collection = VideoCollection.objects.get(pk=c_pk)
-            next_available = VideoCollectionNumber.objects.filter(
-                collection=collection
-            ).aggregate(models.Max('number'))['number__max']
-            if next_available:
-                next_available += 1
-            else:
-                next_available = 1
-            vcn = VideoCollectionNumber(
-                collection=VideoCollection.objects.get(pk=c_pk),
-                video=video,
-                number=next_available
-            )
-            vcn.save()
-
-m2m_changed.connect(collections_changed, sender=Video.collections.through)
-
 class VideoVariant(models.Model):
     # Video that has the common information for this variant
     master = models.ForeignKey(Video, on_delete=models.CASCADE, related_name='variants')
@@ -120,17 +106,33 @@ class VideoVariant(models.Model):
     resolution = models.SmallIntegerField()
 
 
-class VideoCollectionNumber(models.Model):
+class VideoCollectionOrder(OrderedModel):
     collection = models.ForeignKey(VideoCollection, null=False, on_delete=models.CASCADE)
     video = models.ForeignKey(Video, null=False, on_delete=models.CASCADE)
-    number = models.PositiveIntegerField(null=False)
+    order_with_respect_to = 'collection'
 
-    class Meta:
-        unique_together = [['collection', 'number']]
+    class Meta(OrderedModel.Meta):
+        ordering = ('collection', 'order')
+        pass
 
     def __str__(self):
-        return f'{self.collection} #{self.number}: {self.video}'
-    
+        return f'{self.collection} #{self.order}: {self.video}'
+
+    @property
+    def display_order(self):
+        return self.order + 1
+
+
+# because the form save_2m2() does not call the .save() function,
+# an extra signal handler must be defined here to populate the
+# the 'order' field, as this is handled in the .save() function
+# https://github.com/bfirsh/django-ordered-model/blob/master/ordered_model/models.py#L77
+@receiver(post_init, sender=VideoCollectionOrder)
+def default_order(sender, instance, **kwargs):
+    if getattr(instance, instance.order_field_name) is None:
+        c = instance.get_ordering_queryset().aggregate(Max(instance.order_field_name)).get(instance.order_field_name + '__max')
+        setattr(instance, instance.order_field_name, 0 if c is None else c + 1)
+
 
 class VideoChunkedUpload(ChunkedUpload):
     pass

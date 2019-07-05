@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'chunked_upload',
     'dal',
     'dal_select2',
+    'ordered_model',
 
     #django
     'django.contrib.admin',

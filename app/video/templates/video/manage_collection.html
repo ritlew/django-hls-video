@@ -90,7 +90,7 @@
                             <div class="row h-100">
                                 <div class="col col-md-4 col-lg-6 text-center my-auto">
                                     <input class="slug" type="hidden" value="{{ result.video.slug }}">
-                                    <h1 class="position text-primary">{{ result.number }}</h1>
+                                    <h1 class="position text-primary">{{ result.display_order }}</h1>
                                 </div>
                                 <div class="col-md-8 col-lg-6 d-none d-sm-none d-md-block px-0 my-2">
                                     <a href="{% url 'video_player' slug=result.video.slug %}">
