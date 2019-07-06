@@ -19,6 +19,9 @@
 <div class="row mt-2">
     {# display videos #}
     <div class="col-lg-12">
+        <div class="text-center">
+            <a href="{% url 'video_form' %}" class="btn btn-primary">Upload video</a>
+        </div>
         {% for vid in videos %}
         <div class="row border m-2">
             <div class="col-md-5 my-2">
@@ -60,16 +63,26 @@
                 {% endif %}
                 <div class="row align-bottom">
                     <div class="col-md-12">
-                        <a class="btn btn-sm btn-primary" href="{% url 'video_player' slug=vid.slug %}">
+                        <a class="btn btn-sm btn-primary {{ vid.processed|yesno:",disabled" }}"
+                           {% if vid.processed %}
+                               href="{% url 'video_player' slug=vid.slug %}"
+                               title="Play video"
+                           {% else %}
+                               {# clickable but will not link anywhere #}
+                               href="javascript:;"
+                               title="Playback available once video has processed"
+                           {% endif %}
+                           >
                             <i class="fas fa-play"></i>
                         </a>
-                        <a class="btn btn-sm btn-info" href="{% url 'edit_video' slug=vid.slug %}">
+                        <a title="Edit video information" class="btn btn-sm btn-info" href="{% url 'edit_video' slug=vid.slug %}">
                             <i class="fas fa-edit"></i>
                         </a>
                         <a class="btn btn-sm btn-danger {{ vid.processed|yesno:",disabled" }}"
                            {% if vid.processed %}
                                href="{% url 'delete_video' slug=vid.slug %}"
                                onclick="return confirm('Video deletion is permanent and irreversable.\n\nAre you sure you want to delete {{ vid.title }}?')"
+                               title="Delete video"
                            {% else %}
                                {# clickable but will not link anywhere #}
                                href="javascript:;"
@@ -145,7 +158,7 @@
         $.each(data.uploads, function(index, value){
             if (!value.processed){
                 if (value.progress !== undefined){
-                    $(`#${value.upload_id} > .progress-bar`).html(`Encoded ${value.current}s of ${value.total}s`);
+                    $(`#${value.upload_id} > .progress-bar`).html(`Transcoded ${value.current}s of ${value.total}s`);
                     $(`#${value.upload_id} > .progress-bar`).css("width", `${value.progress}%`);
                 }
                 else if (value.state === "PENDING"){

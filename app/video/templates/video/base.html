@@ -28,13 +28,16 @@
             <li class="nav-item">
                 <a class="nav-link" href="{% url 'user_uploads' %}">Uploads</a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'collection_edit' %}">Manage Collections</a>
+            </li>
         </ul>
     </div>
 </nav>
 <div class="container">
-    <div class="jumbotron py-4 mb-2">
+    <div class="jumbotron py-3">
         <div class="container text-center">
-            <h1>{% block page_title %}{% endblock %}</h1>
+            <h1 class="mb-0">{% block page_title %}{% endblock %}</h1>
         </div>
     </div>
     {% if messages %}

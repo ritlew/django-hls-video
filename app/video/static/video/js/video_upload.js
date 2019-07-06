@@ -117,7 +117,7 @@ $(document).ready(function() {
                     if (!video_data.processed){
                         if (video_data.progress !== undefined){
                             $('#processing_progress').slideDown();
-                            $("#processing_progress_bar").html(`Encoded ${video_data.current}s of ${video_data.total}s`);
+                            $("#processing_progress_bar").html(`Transcoded ${video_data.current}s of ${video_data.total}s`);
                             $("#processing_progress_bar").css("width", `${video_data.progress}%`);
                         }
                         else if (video_data.state === "PENDING"){

@@ -33,6 +33,11 @@ class UploadProgressConsumer(WebsocketConsumer):
                 result = AsyncResult(video.processing_id)
                 if result:
                     currently_processing.append(VideoResult(video, result))
+                else:
+                    currently_processing.append(VideoResult(video, None))
+            else:
+                currently_processing.append(VideoResult(video, None))
+
 
         # create response dictionary
         response = {'uploads': []}
@@ -43,17 +48,20 @@ class UploadProgressConsumer(WebsocketConsumer):
                 'title': item.video.title,
                 'slug': item.video.slug,
                 'processed': item.video.processed,
-                'state': item.task.state,
             }
-
-            if item.task.info:
-                # put data in response
-                response['uploads'].append({
-                    **item_info,
-                    **item.task.info
-                })
-            else:
-                response['uploads'].append(item_info)
+            if item.task:
+                if item.task.info:
+                    # put data in response
+                    item_info = {
+                        **item_info,
+                        **item.task.info
+                    }
+                if item.task.state:
+                    item_info = {
+                        **{'state': item.task.state},
+                        **item_info,
+                    }
+            response['uploads'].append(item_info)
 
         self.send(text_data=json.dumps(response))
 

@@ -36,67 +36,108 @@
         </div>
     </div>
 </div>
-<div class="row my-2">
-    <div class="col-md-12 my-2">
-        <div style="height: auto" class="card text-white bg-primary">
-            <div class="card-header">{{ video.collection }}</div>
-            <div class="card-body">
-                <h4 class="card-title">{{ video.title }}</h4>
-                <ul class="list-group list-group-flush">
-                    {# <li class="list-group-item bg-dark">Length: 22:49</li> #}
-                    {# <li class="list-group-item bg-dark">Episode No: 1</li> #}
-                    <li class="list-group-item bg-dark">
+<div class="container">
+    <div class="row my-2">
+        <div class="col-md-12 bg-primary py-2 my-2">
+            <div style="height: auto" class="card text-white bg-primary">
+                <span class="list-group-item bg-dark my-2">
+                    <h3>{{ video.title }}</h3>
+                    <li class="list-group-item text-primary my-2">
                         {{ video.description }}
                     </li>
-                </ul>
+                </span>
+                {% if in_collections %}
+                    <span class="list-group-item bg-dark my-2">
+                        <h4>Collections</h4>
+                        <ul class="list-group">
+                            {% for collection in in_collections %}
+                                <li class="list-group-item text-primary">
+                                    {{ collection.collection.title }} #{{ collection.display_order }}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </span>
+                {% endif %}
+                <span class="list-group-item bg-dark my-2">
+                    <h4>Matroska Video File (.mkv) Download</h4>
+                    <form id="download_form" action="{% url 'download_video' slug=video.slug %}" method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-8">
+                                <select name="resolution" class="form-control" form="download_form">
+                                    {% for option in download_options %}
+                                        <option value="{{ option.value }}">{{ option.resolution }}p</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <input class="btn btn-info w-100" type="submit" value="Download"/>
+                            </div>
+                        </div>
+                    </form>
+                </span>
             </div>
         </div>
     </div>
-    {% comment %}
-    <div class="col-md-4 my-2">
-        <div class="card bg-primary border-primary">
-            <div class="container">
-                {% for i in "xx" %}
-                <div class="row my-2">
-                    <div class="col-md-12">
-                        <div class="card border-primary mb-3">
-                            <div class="card-header">Episode - 22:39</div>
-                            <div class="card-body">
-                                <img src="{{ MEDIA_URL }}video/deathnote.jpg" class="img-fluid"
-                                                                              alt="Responsive image">
-                            </div>
+</div>
+{% if next_videos %}
+    <div class="row my-2 bg-primary">
+        <div class="col-md-12">
+            <div class="text-center my-3">
+                <h3 class="text-white bg-dark p-2 mb-0">
+                    Up next
+                </h3>
+            </div>
+            <div class="row my-2">
+                {% for next_in_series in next_videos %}
+                    <div class="col-md-4 mb-2">
+                        <div class="row text-center mx-0 mb-2">
+                            <span class="col list-group-item text-primary" href="{% url 'video_index' collection=next_in_series.collection.slug %}">
+                                {{ next_in_series.collection.title }} #{{ next_in_series.display_order }}
+                            </span>
+                        </div>
+                        <a href="{% url 'video_player' slug=next_in_series.video.slug %}">
+                            <img class="img-fluid" src="{% url 'get_thumbnail' slug=next_in_series.video.slug %}">
+                        </a>
+                        <div class="text-white mb-1">
+                            <a style="text-decoration: none"  href="{% url 'video_player' slug=next_in_series.video.slug %}">
+                                <div class="row text-white bg-dark h-75 mx-0">
+                                    <div class="card-body mw-100 pt-2 pb-0">
+                                        <h4 class="card-title"><bold>{{ next_in_series.video.title }}</bold> - {{ next_in_series.video.play_time }}</h4>
+                                        <p class="text-truncate">{{ next_in_series.video.description }}</p>
+                                    </div>
+                                </div>
+                            </a>
                         </div>
                     </div>
-                </div>
                 {% endfor %}
             </div>
         </div>
     </div>
-    {% endcomment %}
-</div>
+{% endif %}
 <script>
-$(window).ready(function(){
-var options = {
-    html5: {
-        hls: {
-            overrideNative: true,
-        },
-        nativeAudioTracks: false,
-        nativeVideoTracks: false,
-    }
-};
+    $(window).ready(function(){
+        var options = {
+            html5: {
+                hls: {
+                    overrideNative: true,
+                },
+                nativeAudioTracks: false,
+                nativeVideoTracks: false,
+            }
+        };
 
-    player = videojs('video', options);
-    {% if video %}
-        player.src({
-            src: "{% url 'get_master_playlist' slug=video.slug %}",
-            type: "application/x-mpegURL"
-        });
+        player = videojs('video', options);
+        {% if video %}
+            player.src({
+                src: "{% url 'get_master_playlist' slug=video.slug %}",
+                type: "application/x-mpegURL"
+            });
 
-        player.hlsQualitySelector();
+            player.hlsQualitySelector();
 
-        player.play();
-    {% endif %}
+            player.play();
+        {% endif %}
 	});
 </script>
 {% endblock %}

@@ -1,9 +1,10 @@
 # Django imports
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db import transaction, DatabaseError
 from django.shortcuts import render, redirect
+from django.views.decorators.http import require_POST
 from django.views.generic.base import View, TemplateView
 from django.views.generic.detail import DetailView
 from django.views.generic.list import ListView
@@ -15,6 +16,8 @@ from django.http import (
 # Python standard imports
 import json
 import os
+import shlex
+import subprocess
 
 # third-party imports
 from celery import group
@@ -24,7 +27,8 @@ from sendfile import sendfile
 
 # local imports
 from .forms import VideoUploadForm
-from .models import Video, VideoCollection, VideoChunkedUpload
+from .models import Video, VideoCollection, VideoChunkedUpload, VideoCollectionOrder, RESOLUTIONS
+from .decorators import auth_or_404
 
 class VideoListView(ListView):
     model = Video
@@ -63,10 +67,9 @@ class VideoListView(ListView):
         return context
 
 
-class VideoPlayerView(DetailView):
+class VideoDetailView(DetailView):
     model = Video
     queryset = Video.objects.filter(processed=True)
-    template_name = 'video/video_player.html'
 
     def get_object(self):
         slug = self.kwargs.get('slug')
@@ -83,7 +86,42 @@ class VideoPlayerView(DetailView):
         return video
 
 
-class GetVideoFileView(VideoPlayerView):
+class VideoPlayerView(VideoDetailView):
+    template_name = 'video/video_player.html'
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        slug = self.kwargs.get('slug')
+
+        try:
+            video = self.queryset.get(slug=slug)
+        except Video.DoesNotExist:
+            return context
+
+        # get collections that video is in
+        context['in_collections'] = VideoCollectionOrder.objects.filter(video=video)
+
+        # get suggested next videos
+        context['next_videos'] = []
+        for vcn in context['in_collections']:
+            next_in = VideoCollectionOrder.objects.filter(
+                collection=vcn.collection,
+                video__processed=True,
+                order__gt=vcn.order,
+            )
+
+            if next_in:
+                context['next_videos'].append(next_in.first())
+
+        # get download options
+        context['download_options'] = []
+        for i, resolution in enumerate(RESOLUTIONS):
+            context['download_options'].append({'resolution': resolution, 'value': i})
+        context['download_options'].reverse()
+
+        return context
+
+
+class GetVideoFileView(VideoDetailView):
     """
     Abstract view class to retreive a file for a specific video. Subclasses should
     implement the get_filename() function and this class contains all other code to
@@ -141,7 +179,41 @@ class GetVariantVideoView(GetVideoFileView):
         return field.video_file.name
 
 
-@method_decorator(login_required, name='dispatch')
+@method_decorator(require_POST, name='dispatch')
+@method_decorator(auth_or_404, name='dispatch')
+class DownloadVideoView(VideoDetailView):
+    def post(self, request, *args, **kwargs):
+        video = self.get_object()
+        try:
+            resolution = int(request.POST.get('resolution', None)[0])
+        except:
+            return HttpResponseBadRequest()
+
+        # audio only variant
+        audio_variant = video.variants.all().order_by('-resolution')[0]
+        try:
+            # selected video quality variant
+            video_variant = video.variants.get(resolution=resolution)
+        except VideoVariant.DoesNotExist:
+            raise HttpResponseServerError()
+
+        video_filepath = os.path.join(settings.MEDIA_ROOT, video_variant.video_file.name)
+        audio_filepath = os.path.join(settings.MEDIA_ROOT, audio_variant.video_file.name)
+
+        # combine audio with video and pipe to variable for transmission
+        command = \
+            f'ffmpeg -v quiet -i {video_filepath} -i {audio_filepath} ' \
+            f'-map 0:v:0 -map 1:a:0 -c copy -f matroska -'
+
+        file_data = subprocess.check_output(shlex.split(command))
+
+        response = HttpResponse(file_data, content_type="video/x-matroska")
+        response['Content-Disposition'] = f'inline; filename={video.title}.mkv'
+
+        return response
+
+
+@method_decorator(auth_or_404, name='dispatch')
 class UserUploadsView(ListView):
     model = Video
     template_name = 'video/user_uploads.html'
@@ -158,7 +230,7 @@ class UserUploadsView(ListView):
         return video_results
 
 
-@method_decorator(login_required, name='dispatch')
+@method_decorator(auth_or_404, name='dispatch')
 class VideoFormView(TemplateView):
     template_name = 'video/upload_form.html'
 
@@ -185,14 +257,12 @@ class VideoFormView(TemplateView):
             upload_id = form.cleaned_data.get('upload_id')
             try:
                 video = Video.objects.get(user=request.user, upload_id=upload_id)
-                form = VideoUploadForm(request.POST, instance=video)
             except Video.DoesNotExist:
-                form = VideoUploadForm(request.POST)
+                video = Video(user=request.user)
 
-            vid = form.save(commit=False)
-            vid.user = request.user
-            vid.save()
-            form.save_m2m()
+            form = VideoUploadForm(request.POST, instance=video)
+
+            vid = form.save()
 
             if self.request.is_ajax():
                 return JsonResponse({}, status=201)
@@ -203,12 +273,64 @@ class VideoFormView(TemplateView):
             return JsonResponse(form.errors, status=400)
 
 
-@method_decorator(login_required, name='dispatch')
+@method_decorator(auth_or_404, name='dispatch')
+class EditVideoCollectionView(TemplateView):
+    template_name = 'video/manage_collection.html'
+
+    def get(self, request, *args, **kwargs):
+        collection_slug = kwargs.get('slug', None)
+        if not collection_slug:
+            first = VideoCollection.objects.first()
+            return redirect('collection_edit', slug=first.slug)
+
+        video_results = VideoCollectionOrder.objects.filter(
+            collection__slug=collection_slug
+        )
+        collections = VideoCollection.objects.all()
+
+        payload = {
+            'results': video_results,
+            'collections': collections,
+            'target': collection_slug
+        }
+
+        return render(request, self.template_name, payload)
+
+    def post(self, request, *args, **kwargs):
+        slugs = request.POST.getlist('slugs[]', None)
+        target = request.POST.get('target', None)
+
+        if not slugs or not target:
+            return JsonResponse({}, status=500)
+
+        # get all requested vcns
+        try:
+            vcns = VideoCollectionOrder.objects.select_for_update().filter(
+                collection__slug=target,
+                video__slug__in=slugs,
+            )
+        except VideoCollectionOrder.DoesNotExist:
+            return JsonResponse({}, status=500)
+
+        # reorder selected vcns
+        try:
+            with transaction.atomic():
+                for i, slug in enumerate(slugs):
+                    vcn = vcns.get(video__slug=slug)
+                    # reorder all videos in collection
+                    vcn.bottom()
+        except DatabaseError:
+            return JsonResponse({}, status=500)
+
+        return JsonResponse({}, status=200)
+
+
+@method_decorator(auth_or_404, name='dispatch')
 class EditVideoView(VideoFormView):
     template_name = 'video/edit_form.html'
 
 
-@method_decorator(login_required, name='dispatch')
+@method_decorator(auth_or_404, name='dispatch')
 class DeleteVideoView(View):
     def get(self, request, *args, **kwargs):
         slug = self.kwargs.get('slug', None)

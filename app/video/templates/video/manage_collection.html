@@ -1,0 +1,165 @@
+{% extends 'video/base.html' %}
+
+{% load staticfiles %}
+
+{% block head %}
+<script src="{% static 'video/js/Sortable.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery-sortablejs@latest/jquery-sortable.js"></script>
+
+<script>
+    function get_ordered_slugs(){
+        return ordered_slugs = $("#sortable-videos").find(".slug").map(function(){
+            return $(this).val();
+        }).get();
+    }
+
+    function update_page(){
+        if (start_slugs.join() != get_ordered_slugs().join()){
+            $("#save-btn").prop("disabled", false);
+            $(window).on('beforeunload', function() {
+                $("#collection_select").val(window.location.pathname);
+                return "A video upload is in progress. Navigating away will cause the upload to abort.\n\nAre you sure you want to stop uploading?";
+            });
+        } else {
+            $("#save-btn").prop("disabled", true);
+            $(window).off('beforeunload');
+        }
+    }
+
+    $(document).ready(function(){
+        start_slugs = get_ordered_slugs();
+
+        var sortable = $("#sortable-videos").sortable({
+            scroll: true,
+            ghostClass: "bg-primary",
+            chosenClass: "bg-primary",
+            dragClass: "bg-primary",
+            animation: 150,
+            delay: 150,
+            delayOnTouchOnly: true,
+            onSort: function(evt){
+                update_page();
+            }
+        });
+
+
+        $("#save-btn").click(function(){
+            ordered_slugs = get_ordered_slugs();
+
+            $.ajax({
+                method: "POST",
+                dataType: "json",
+                data: {
+                    slugs: ordered_slugs, 
+                    csrfmiddlewaretoken: "{{ csrf_token }}",
+                    target: "{{ target }}",
+                },
+                success: function(){
+                    start_slugs = get_ordered_slugs();
+                    update_page();
+                    $.each($("#sortable-videos").children(), function(index, value){
+                        $(value).find('.position').html(index+1);
+                    });
+                }
+            });
+        });
+    });
+</script>
+<style>
+    .drag-cursor {
+        cursor: grab;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}
+    Manage Collections
+{% endblock %}
+
+{% block main %}
+<div class="row my-2">
+    <div class="col">
+        <div class="row">
+            {# Video upload button #}
+            <div class="text-center col-md-3 mb-2">
+                <button id="save-btn" class="btn btn-primary w-100" disabled>Save</a>
+            </div>
+            {# collections nav #}
+            {% if collections %}
+                <div class="input-group col-md-9 mb-2">
+                    <div class="input-group-prepend">
+                        <label class="input-group-text" for="collection_select">Collection</label>
+                    </div>
+                    <select name="collection" class="form-control list-group-item"
+                          id="collection_select" onchange="if(location != this.value){location=this.value}">
+                        {% for c in collections %}
+                            {% if target == c.slug %}
+                                <option value="{% url 'collection_edit' slug=c.slug %}" selected>
+                                    {{ c.title }}
+                                </option>
+                            {% else %}
+                                <option value="{% url 'collection_edit' slug=c.slug %}">
+                                    {{ c.title }}
+                                </option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        <div class="alert alert-info">
+          Drag and Drop the videos to reorder the collection!
+        </div>
+        <ul id="sortable-videos" class="list-group">
+            {% for result in results %}
+                <li class="list-group-item drag-cursor">
+                    <div class="row">
+                        <div class="col-2 col-md-6">
+                            <div class="row h-100">
+                                <div class="col col-md-4 col-lg-6 text-center my-auto">
+                                    <input class="slug" type="hidden" value="{{ result.video.slug }}">
+                                    <h1 class="position text-primary">{{ result.display_order }}</h1>
+                                </div>
+                                <div class="col-md-8 col-lg-6 d-none d-sm-none d-md-block px-0 my-2">
+                                    <a href="{% url 'video_player' slug=result.video.slug %}">
+                                        <img class="img-fluid" src="{% url 'get_thumbnail' slug=result.video.slug %}">
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-10 col-md-6 my-2">
+                            <div class="row">
+                                <div class="col-12">
+                                    <h3 class="text-primary text-truncate">{{ result.video.title }}</h3>
+                                </div>
+                            </div>
+                            {% if result.video.vid_info_str %}
+                                <div class="row">
+                                    <div class="col-12">
+                                        {{ result.video.play_time }}
+                                    </div>
+                                </div>
+                            {% endif %}
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="text-truncate">
+                                        {% if result.video.description %}
+                                            {{ result.video.description }}
+                                        {% else %}
+                                            <i>No Description</i>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

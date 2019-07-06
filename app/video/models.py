@@ -1,15 +1,25 @@
 from django.conf import settings
 from django.db import models, transaction
+from django.db.models import Max
+from django.db.models.signals import post_init
+from django.dispatch import receiver
 
-from chunked_upload.models import ChunkedUpload
 from autoslug import AutoSlugField
 from celery import group
+from chunked_upload.models import ChunkedUpload
+from ordered_model.models import OrderedModel
 
 import json
 import os
 import time
 
 RESOLUTIONS = [240, 360, 480, 720, 1080]
+
+TRUE_FALSE_CHOICES = (
+    (False, "No"),
+    (True, "Yes"),
+)
+
 
 class VideoCollection(models.Model):
     title = models.CharField(max_length=50)
@@ -18,16 +28,20 @@ class VideoCollection(models.Model):
 
     def __str__(self):
         return self.title
-    
+
 
 class Video(models.Model):
     ### user facing elements
     title = models.CharField(max_length=50, default='Untitled')
     description = models.TextField(default='')
-    collections = models.ManyToManyField(VideoCollection, related_name='videos')
-    public = models.BooleanField(default=False)
+    public = models.BooleanField(default=False, choices=TRUE_FALSE_CHOICES)
     slug = AutoSlugField(populate_from='title', unique=True)
     thumbnail = models.FileField(null=True)
+    collections = models.ManyToManyField(
+        VideoCollection,
+        related_name='videos',
+        through='video.VideoCollectionOrder',
+    )
 
     ### interal logic elements
     # ID from chunked upload
@@ -50,23 +64,25 @@ class Video(models.Model):
         return self.slug
 
     def begin_processing(self):
-        from .tasks import (
-            setup_video_processing, create_thumbnail, create_variants, cleanup_video_processing
-        )
+        if not self.processing_id:
+            from .tasks import (
+                setup_video_processing, create_thumbnail, create_variants, cleanup_video_processing
+            )
 
-        processing_tasks = (
-            setup_video_processing.s(self.pk) |
-            create_thumbnail.si(self.pk) |
-            create_variants.si(self.pk) |
-            cleanup_video_processing.si(self.pk)
-        )
+            processing_tasks = (
+                setup_video_processing.s(self.pk) |
+                create_thumbnail.si(self.pk) |
+                create_variants.si(self.pk) |
+                cleanup_video_processing.si(self.pk)
+            )
 
-        res = processing_tasks.delay()
-        with transaction.atomic():
-            vid = Video.objects.select_for_update().get(pk=self.pk)
-            vid.processing_id = res.parent.id
-            vid.save()
-
+            res = processing_tasks.delay()
+            with transaction.atomic():
+                vid = Video.objects.select_for_update().get(pk=self.pk)
+                vid.processing_id = res.parent.id
+                vid.save()
+        else:
+            logging.error(f'{self.title}:{self.pk} attempted to process again while processing')
 
     @property
     def vid_info(self):
@@ -88,6 +104,34 @@ class VideoVariant(models.Model):
     video_file = models.FileField()
     # resolution that is an index of RESOLUTIONS defined at the top of this file
     resolution = models.SmallIntegerField()
+
+
+class VideoCollectionOrder(OrderedModel):
+    collection = models.ForeignKey(VideoCollection, null=False, on_delete=models.CASCADE)
+    video = models.ForeignKey(Video, null=False, on_delete=models.CASCADE)
+    order_with_respect_to = 'collection'
+
+    class Meta(OrderedModel.Meta):
+        ordering = ('collection', 'order')
+        pass
+
+    def __str__(self):
+        return f'{self.collection} #{self.order}: {self.video}'
+
+    @property
+    def display_order(self):
+        return self.order + 1
+
+
+# because the form save_2m2() does not call the .save() function,
+# an extra signal handler must be defined here to populate the
+# the 'order' field, as this is handled in the .save() function
+# https://github.com/bfirsh/django-ordered-model/blob/master/ordered_model/models.py#L77
+@receiver(post_init, sender=VideoCollectionOrder)
+def default_order(sender, instance, **kwargs):
+    if getattr(instance, instance.order_field_name) is None:
+        c = instance.get_ordering_queryset().aggregate(Max(instance.order_field_name)).get(instance.order_field_name + '__max')
+        setattr(instance, instance.order_field_name, 0 if c is None else c + 1)
 
 
 class VideoChunkedUpload(ChunkedUpload):

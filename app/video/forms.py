@@ -3,24 +3,21 @@ from dal import autocomplete
 
 from .models import Video
 
-TRUE_FALSE_CHOICES = (
-    (False, "No"),
-    (True, "Yes"),
-)
 
-class VideoUploadForm(forms.ModelForm):
+class BootstrapModelForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self.fields['public'] = forms.ChoiceField(
-            choices=TRUE_FALSE_CHOICES
-        )
 
         # bootstrap css on all fields
         for field in iter(self.fields):
             self.fields[field].widget.attrs.update({
                 'class': 'form-control'
             })
+
+
+class VideoUploadForm(BootstrapModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         self.fields['collections'].widget.attrs.update({
             'data-theme': 'bootstrap',
@@ -38,7 +35,7 @@ class VideoUploadForm(forms.ModelForm):
             video.slug = None
 
         if commit:
-            video.save()
+            video = super().save(commit=True)
 
         return video
 
@@ -47,8 +44,8 @@ class VideoUploadForm(forms.ModelForm):
         model = Video
         fields = ['title', 'description', 'collections', 'public', 'upload_id']
         widgets = {
-            'collections': autocomplete.ModelSelect2Multiple(url='api_collection_autocomplete'),
-            'upload_id': forms.HiddenInput()
+            'collections': autocomplete.ModelSelect2Multiple(url='autocomplete_collection'),
+            'upload_id': forms.HiddenInput(),
         }
 
 
