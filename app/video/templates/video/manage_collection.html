@@ -7,7 +7,28 @@
 <script src="https://cdn.jsdelivr.net/npm/jquery-sortablejs@latest/jquery-sortable.js"></script>
 
 <script>
+    function get_ordered_slugs(){
+        return ordered_slugs = $("#sortable-videos").find(".slug").map(function(){
+            return $(this).val();
+        }).get();
+    }
+
+    function update_page(){
+        if (start_slugs.join() != get_ordered_slugs().join()){
+            $("#save-btn").prop("disabled", false);
+            $(window).on('beforeunload', function() {
+                $("#collection_select").val(window.location.pathname);
+                return "A video upload is in progress. Navigating away will cause the upload to abort.\n\nAre you sure you want to stop uploading?";
+            });
+        } else {
+            $("#save-btn").prop("disabled", true);
+            $(window).off('beforeunload');
+        }
+    }
+
     $(document).ready(function(){
+        start_slugs = get_ordered_slugs();
+
         var sortable = $("#sortable-videos").sortable({
             scroll: true,
             ghostClass: "bg-primary",
@@ -16,12 +37,14 @@
             animation: 150,
             delay: 150,
             delayOnTouchOnly: true,
+            onSort: function(evt){
+                update_page();
+            }
         });
 
+
         $("#save-btn").click(function(){
-            ordered_slugs = $("#sortable-videos").find(".slug").map(function(){
-                return $(this).val();
-            }).get();
+            ordered_slugs = get_ordered_slugs();
 
             $.ajax({
                 method: "POST",
@@ -30,10 +53,14 @@
                     slugs: ordered_slugs, 
                     csrfmiddlewaretoken: "{{ csrf_token }}",
                     target: "{{ target }}",
+                },
+                success: function(){
+                    start_slugs = get_ordered_slugs();
+                    update_page();
+                    $.each($("#sortable-videos").children(), function(index, value){
+                        $(value).find('.position').html(index+1);
+                    });
                 }
-            });
-            $.each($("#sortable-videos").children(), function(index, value){
-                $(value).find('.position').html(index+1);
             });
         });
     });
@@ -51,36 +78,42 @@
 
 {% block main %}
 <div class="row my-2">
-    <div class="col-md-3">
-        {# Video upload button #}
-        {% if request.user.is_staff or request.user.is_superuser %}
-        <div class="text-center mb-2">
-            <button id="save-btn" class="btn btn-primary w-100">Save Current</a>
-        </div>
-        {% endif %}
-        {# collections nav #}
-        {% if collections %}
-            <div class="list-group sticky-top mb-2">
-                <a class="list-group-item list-group-item-action active">
-                    Collections
-                </a>
-                {% for c in collections %}
-                    {% if target == c.slug %}
-                        <a href="{% url 'collection_edit' slug=c.slug %}" 
-                           class="list-group-item list-group-item-action bg-info text-white">
-                            {{ c.title }}
-                        </a>
-                    {% else %}
-                        <a href="{% url 'collection_edit' slug=c.slug %}" 
-                           class="list-group-item list-group-item-action">
-                            {{ c.title }}
-                        </a>
-                    {% endif %}
-                {% endfor %}
+    <div class="col">
+        <div class="row">
+            {# Video upload button #}
+            <div class="text-center col-md-3 mb-2">
+                <button id="save-btn" class="btn btn-primary w-100" disabled>Save</a>
             </div>
-        {% endif %}
+            {# collections nav #}
+            {% if collections %}
+                <div class="input-group col-md-9 mb-2">
+                    <div class="input-group-prepend">
+                        <label class="input-group-text" for="collection_select">Collection</label>
+                    </div>
+                    <select name="collection" class="form-control list-group-item"
+                          id="collection_select" onchange="if(location != this.value){location=this.value}">
+                        {% for c in collections %}
+                            {% if target == c.slug %}
+                                <option value="{% url 'collection_edit' slug=c.slug %}" selected>
+                                    {{ c.title }}
+                                </option>
+                            {% else %}
+                                <option value="{% url 'collection_edit' slug=c.slug %}">
+                                    {{ c.title }}
+                                </option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+        </div>
     </div>
-    <div class="col-md-9">
+</div>
+<div class="row">
+    <div class="col">
+        <div class="alert alert-info">
+          Drag and Drop the videos to reorder the collection!
+        </div>
         <ul id="sortable-videos" class="list-group">
             {% for result in results %}
                 <li class="list-group-item drag-cursor">
