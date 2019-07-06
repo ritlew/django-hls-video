@@ -1,7 +1,6 @@
 # Django imports
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction, DatabaseError
 from django.shortcuts import render, redirect
@@ -29,6 +28,7 @@ from sendfile import sendfile
 # local imports
 from .forms import VideoUploadForm
 from .models import Video, VideoCollection, VideoChunkedUpload, VideoCollectionOrder, RESOLUTIONS
+from .decorators import auth_or_404
 
 class VideoListView(ListView):
     model = Video
@@ -168,8 +168,19 @@ class GetVariantPlaylistView(GetVideoFileView):
         return field.playlist_file.name
 
 
-@method_decorator(login_required, name='dispatch')
+class GetVariantVideoView(GetVideoFileView):
+    def get_filename(self):
+        variant = self.kwargs.get('variant')
+        field = self.get_object().variants.get(resolution=variant)
+
+        if not field:
+            raise Http404()
+
+        return field.video_file.name
+
+
 @method_decorator(require_POST, name='dispatch')
+@method_decorator(auth_or_404, name='dispatch')
 class DownloadVideoView(VideoDetailView):
     def post(self, request, *args, **kwargs):
         video = self.get_object()
@@ -202,18 +213,7 @@ class DownloadVideoView(VideoDetailView):
         return response
 
 
-class GetVariantVideoView(GetVideoFileView):
-    def get_filename(self):
-        variant = self.kwargs.get('variant')
-        field = self.get_object().variants.get(resolution=variant)
-
-        if not field:
-            raise Http404()
-
-        return field.video_file.name
-
-
-@method_decorator(login_required, name='dispatch')
+@method_decorator(auth_or_404, name='dispatch')
 class UserUploadsView(ListView):
     model = Video
     template_name = 'video/user_uploads.html'
@@ -230,7 +230,7 @@ class UserUploadsView(ListView):
         return video_results
 
 
-@method_decorator(login_required, name='dispatch')
+@method_decorator(auth_or_404, name='dispatch')
 class VideoFormView(TemplateView):
     template_name = 'video/upload_form.html'
 
@@ -273,7 +273,7 @@ class VideoFormView(TemplateView):
             return JsonResponse(form.errors, status=400)
 
 
-@method_decorator(login_required, name='dispatch')
+@method_decorator(auth_or_404, name='dispatch')
 class EditVideoCollectionView(TemplateView):
     template_name = 'video/manage_collection.html'
 
@@ -325,12 +325,12 @@ class EditVideoCollectionView(TemplateView):
         return JsonResponse({}, status=200)
 
 
-@method_decorator(login_required, name='dispatch')
+@method_decorator(auth_or_404, name='dispatch')
 class EditVideoView(VideoFormView):
     template_name = 'video/edit_form.html'
 
 
-@method_decorator(login_required, name='dispatch')
+@method_decorator(auth_or_404, name='dispatch')
 class DeleteVideoView(View):
     def get(self, request, *args, **kwargs):
         slug = self.kwargs.get('slug', None)

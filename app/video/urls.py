@@ -4,8 +4,12 @@ from . import views
 
 urlpatterns = [
     path('', views.VideoListView.as_view(), name="video_index"),
-    path('s/<collection>/', views.VideoListView.as_view(), name="video_index"),
-    path('get/<slug:slug>/', include([
+    path('search/<collection>/', views.VideoListView.as_view(), name="video_index"),
+    path('videos/<slug:slug>/', include([
+        path('play/', views.VideoPlayerView.as_view(), name="video_player"),
+        path('edit/', views.EditVideoView.as_view(), name="edit_video"),
+        path('delete/', views.DeleteVideoView.as_view(), name="delete_video"),
+        path('download/', views.DownloadVideoView.as_view(), name="download_video"),
         path('thumbnail/', views.GetVideoThumbnailView.as_view(), name="get_thumbnail"),
         path('master_playlist/', include([
             path('', views.GetMasterPlaylistView.as_view(), name="get_master_playlist"),
@@ -13,15 +17,11 @@ urlpatterns = [
             path('<int:variant>.m4s', views.GetVariantVideoView.as_view(), name="get_video"),
         ])),
     ])),
-    path('play/<slug:slug>/', views.VideoPlayerView.as_view(), name="video_player"),
     path('upload/', views.VideoFormView.as_view(), name="video_form"),
-    path('edit/<slug:slug>/', views.EditVideoView.as_view(), name="edit_video"),
-    path('delete/<slug:slug>/', views.DeleteVideoView.as_view(), name="delete_video"),
-    path('download/<slug:slug>/', views.DownloadVideoView.as_view(), name="download_video"),
     path('uploads/', views.UserUploadsView.as_view(), name="user_uploads"),
     path('collection/', include([
         path('edit/', views.EditVideoCollectionView.as_view(), name='collection_edit'),
-        path('edit/<slug:slug>/', views.EditVideoCollectionView.as_view(), name='collection_edit'),
+        path('<slug:slug>/edit/', views.EditVideoCollectionView.as_view(), name='collection_edit'),
     ])),
     path('api/autocomplete/', include([
         path(
