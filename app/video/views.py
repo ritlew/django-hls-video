@@ -97,40 +97,28 @@ class VideoPlayerView(VideoDetailView):
         except Video.DoesNotExist:
             return context
 
-        next_videos = []
-        in_collections = []
-        for collection in VideoCollection.objects.all():
-            try:
-                match = VideoCollectionOrder.objects.get(
-                    video=video,
-                    collection=collection
-                )
-            except VideoCollectionOrder.DoesNotExist:
-                # try next collection
-                continue
+        # get collections that video is in
+        context['in_collections'] = VideoCollectionOrder.objects.filter(video=video)
 
-            in_collections.append(match)
-            collection_videos = VideoCollectionOrder.objects.filter(
-                collection=match.collection,
+        # get suggested next videos
+        context['next_videos'] = []
+        for vcn in context['in_collections']:
+            next_in = VideoCollectionOrder.objects.filter(
+                collection=vcn.collection,
                 video__processed=True,
-                order__gt=match.order,
+                order__gt=vcn.order,
             )
 
-            if collection_videos:
-                next_videos.append(collection_videos.first())
+            if next_in:
+                context['next_videos'].append(next_in.first())
 
-        variants = video.variants.all().order_by('resolution')
+        # get download options
         context['download_options'] = []
         for i, resolution in enumerate(RESOLUTIONS):
             context['download_options'].append({'resolution': resolution, 'value': i})
         context['download_options'].reverse()
 
-        if len(next_videos):
-            context['next_videos'] = next_videos
-        if len(in_collections):
-            context['in_collections'] = in_collections
         return context
-
 
 
 class GetVideoFileView(VideoDetailView):
@@ -313,7 +301,6 @@ class EditVideoCollectionView(TemplateView):
         target = request.POST.get('target', None)
 
         if not slugs or not target:
-            messages.add_message(request, messages.ERROR, 'Something went wrong! Try again later.')
             return JsonResponse({}, status=500)
 
         # get all requested vcns
@@ -323,7 +310,6 @@ class EditVideoCollectionView(TemplateView):
                 video__slug__in=slugs,
             )
         except VideoCollectionOrder.DoesNotExist:
-            messages.add_message(request, messages.ERROR, 'Something went wrong! Try again later.')
             return JsonResponse({}, status=500)
 
         # reorder selected vcns
@@ -334,10 +320,8 @@ class EditVideoCollectionView(TemplateView):
                     # reorder all videos in collection
                     vcn.bottom()
         except DatabaseError:
-            messages.add_message(request, messages.ERROR, 'Something went wrong! Try again later.')
             return JsonResponse({}, status=500)
 
-        messages.add_message(request, messages.SUCCESS, 'Collection updated successfully!')
         return JsonResponse({}, status=200)
 
 
@@ -371,19 +355,6 @@ class CollectionAutocomplete(autocomplete.Select2QuerySetView):
             return VideoCollection.objects.none()
 
         queryset = VideoCollection.objects.all().order_by('title')
-
-        if self.q:
-            queryset = queryset.filter(title__istartswith=self.q)
-
-        return queryset
-
-
-class VideoAutocomplete(autocomplete.Select2QuerySetView):
-    def get_queryset(self):
-        if not self.request.user.is_authenticated:
-            return Video.objects.none()
-
-        queryset = Video.objects.all().order_by('title')
 
         if self.q:
             queryset = queryset.filter(title__istartswith=self.q)

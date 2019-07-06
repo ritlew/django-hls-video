@@ -25,11 +25,6 @@ urlpatterns = [
     ])),
     path('api/autocomplete/', include([
         path(
-            'video/',
-            views.VideoAutocomplete.as_view(),
-            name='autocomplete_video'
-        ),
-        path(
             'collection/',
             views.CollectionAutocomplete.as_view(create_field='title'),
             name='autocomplete_collection'
