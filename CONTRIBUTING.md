@@ -8,12 +8,12 @@ and create a pull request.
 2. I will review it and suggest changes or start 
 discussions.
 
-3. The pull request wil be merged into dev when
+3. The pull request will be merged into dev when
 approved.
 
 ## Building
 The project is developed, tested, and deployed with the
-use of docker. and docker-compose. There are several 
+use of docker and docker-compose. There are several 
 components/services that are necessary to make the project
 functional. 
 
@@ -23,14 +23,22 @@ functional.
 2. Navigate to the repo directory (where docker-compose.yml 
 is).
 
-3. Create superuser account (this will be needed for development):
+3. Copy the file `.blankenv` to `.env` and enter values that
+would be appropriate for your use case. `UWSGI_PROD` should be blank
+if it is not a production environment (turns Django's debug on 
+if so). Otherwise, make it anything and it will be production settings.
+For `SECRET_KEY`, use the `venv.sh` and `gen.sh` scripts included
+in the `scripts` directory.
+
+
+4. Create superuser account (this will be needed for development):
 ```
 docker run uwsgi sh
 python manage.py createsuperuser
 exit
 ```
 
-4. Run `docker-compose up --build`. The server will be available
+5. Run `docker-compose up --build`. The server will be available
 on http://localhost:4002. Login at http://localhost:4002/admin
 using the credentials created earlier to use most of the 
 functionality of the website.
