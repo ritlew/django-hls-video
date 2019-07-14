@@ -10,7 +10,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md)
 ## Deployment
 Build the project from the instructions included in [CONTRIBUTING.md](CONTRIBUTING.md), 
 and then serve the project using whatever proxy you like, or change the config at 
-[django-hls-video/config/nginx/conf.d/local.conf](django-hls-video/config/nginx/conf.d/local.conf)
+[config/nginx/conf.d/local.conf](config/nginx/conf.d/local.conf)
 to fit your needs. 
 
 Here is an example of reverse proxy settings for nginx:
