@@ -10,6 +10,9 @@ from django.contrib.messages import constants as messages
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RMQ_USER = os.environ.get("RMQ_USER")
+RMQ_PASSWORD = os.environ.get("RMQ_PASSWORD")
+RMQ_URL = f'amqp://{RMQ_USER}:{RMQ_PASSWORD}@rabbitmq:5672'
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("SECRET_KEY")
@@ -103,9 +106,9 @@ WSGI_APPLICATION = 'django_hls_video.wsgi.application'
 ASGI_APPLICATION = 'django_hls_video.routing.application'
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "BACKEND": "channels_rabbitmq.core.RabbitmqChannelLayer",
         "CONFIG": {
-            "hosts": [("redis", 6379)],
+            "host": f'{RMQ_URL}',
         },
     },
 }
@@ -172,8 +175,8 @@ SENDFILE_REL_PATH = 'protected'
 SENDFILE_ROOT = os.path.join(MEDIA_ROOT, SENDFILE_REL_PATH)
 
 # Celery
-CELERY_BROKER_URL = "redis://redis"
-CELERY_RESULT_BACKEND = "redis://redis"
+CELERY_BROKER_URL = RMQ_URL
+CELERY_RESULT_BACKEND = RMQ_URL
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_SERIALIZER = 'json'
 
