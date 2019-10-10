@@ -71,14 +71,24 @@ def create_thumbnail(self, video_pk):
     # take an image somewhere between 10% to 30% into the video
     random_factor = random.uniform(.1, .3)
     thumbnail_timestamp = strftime('%H:%M:%S', gmtime(int(duration * random_factor)))
+
+    # create jpg thumbnail
     thumbnail_command = \
-       f'ffmpeg -v quiet -hide_banner -ss {thumbnail_timestamp} ' \
+       f'ffmpeg -y -v quiet -hide_banner -ss {thumbnail_timestamp} ' \
        f'-i {raw_video_file.name} -vframes 1 {video.folder_path}/thumb.jpg'
     subprocess.Popen(shlex.split(thumbnail_command)).wait()
+
+    # create gif preview
+    gif_command = \
+       f'ffmpeg -y -v quiet -ss {thumbnail_timestamp} -t 5 -i {raw_video_file.name} ' \
+       f'-vf "fps=20,scale=640:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" ' \
+       f'-loop 0 {video.folder_path}/preview.gif'
+    subprocess.Popen(shlex.split(gif_command)).wait()
 
     with transaction.atomic():
         video = Video.objects.select_for_update().get(pk=video_pk)
         video.thumbnail = os.path.join(video.folder_path, "thumb.jpg")
+        video.gif_preview = os.path.join(video.folder_path, "preview.gif")
         video.save()
 
     return

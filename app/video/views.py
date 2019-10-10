@@ -147,6 +147,14 @@ class GetVideoThumbnailView(GetVideoFileView):
         return self.get_object().thumbnail.name
 
 
+class GetVideoGifPreviewView(GetVideoFileView):
+    # preview can be accesed before video is fully processed
+    queryset = Video.objects.all()
+
+    def get_filename(self):
+        return self.get_object().gif_preview.name
+
+
 class GetMasterPlaylistView(GetVideoFileView):
     def get_filename(self):
         field = self.get_object().master_playlist

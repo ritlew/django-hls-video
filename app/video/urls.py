@@ -11,6 +11,7 @@ urlpatterns = [
         path('delete/', views.DeleteVideoView.as_view(), name="delete_video"),
         path('download/', views.DownloadVideoView.as_view(), name="download_video"),
         path('thumbnail/', views.GetVideoThumbnailView.as_view(), name="get_thumbnail"),
+        path('gif/', views.GetVideoGifPreviewView.as_view(), name="get_gif_preview"),
         path('master_playlist/', include([
             path('', views.GetMasterPlaylistView.as_view(), name="get_master_playlist"),
             path('<int:variant>.m3u8', views.GetVariantPlaylistView.as_view(), name="get_variant_playlist"),

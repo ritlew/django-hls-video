@@ -4,10 +4,36 @@
 
 {% block head %}
 <style>
+.video-preview {
+    min-width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: opacity 0.5s linear;
+}
+.video-preview:hover {
+    transition: none;
+}
+
 .badge-large-text {
     font-size: 100%;
 }
 </style>
+<script>
+    $(window).ready(function(){
+        $(".thumbnail-container").mouseover(function() {
+            // reset gif playback
+            var src = $(this).children('.video-preview').attr('src');
+            $(this).children('.video-preview').attr('src', '');
+            $(this).children('.video-preview').attr('src', src);
+
+            $(this).children('.video-preview').css('opacity', 1);
+        });
+        $(".thumbnail-container").mouseout(function() {
+            $(this).children('.video-preview').css('opacity', 0);
+        });
+    });
+</script>
 {% endblock %}
 
 {% block page_title %}
@@ -52,8 +78,10 @@
         <div class="row">
         {% for vid in videos %}
             <div class="col-lg-6 mb-2">
-                <a href="{% url 'video_player' slug=vid.slug %}">
-                    <img class="img-fluid" src="{% url 'get_thumbnail' slug=vid.slug %}">
+                <a class="thumbnail-container" href="{% url 'video_player' slug=vid.slug %}">
+                    <img class="video-thumbnail img-fluid" src="{% url 'get_thumbnail' slug=vid.slug %}">
+                    {# not sure why it needs the col class, but it fixes the width #}
+                    <img class="video-preview img-fluid col" src="{% url 'get_gif_preview' slug=vid.slug %}" style="opacity: 0">
                 </a>
                 <div class="text-white mb-1">
                     <div class="row align-items-center bg-dark h-25 py-2 mx-0">

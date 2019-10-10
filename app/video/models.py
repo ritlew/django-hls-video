@@ -37,6 +37,7 @@ class Video(models.Model):
     public = models.BooleanField(default=False, choices=TRUE_FALSE_CHOICES)
     slug = AutoSlugField(populate_from='title', unique=True)
     thumbnail = models.FileField(null=True)
+    gif_preview = models.FileField(null=True)
     collections = models.ManyToManyField(
         VideoCollection,
         related_name='videos',
