@@ -60,6 +60,10 @@ def create_thumbnail(self, video_pk):
     # get the upload object
     video = Video.objects.get(pk=video_pk)
     raw_video_file = VideoChunkedUpload.objects.get(upload_id=video.upload_id).file
+    if raw_video_file.name:
+        use_file = raw_video_file.name
+    else:
+        use_file = video.variants.all().order_by('-resolution')[1].video_file.name
 
     # change to media directory
     os.chdir(settings.MEDIA_ROOT)
@@ -75,12 +79,12 @@ def create_thumbnail(self, video_pk):
     # create jpg thumbnail
     thumbnail_command = \
        f'ffmpeg -y -v quiet -hide_banner -ss {thumbnail_timestamp} ' \
-       f'-i {raw_video_file.name} -vframes 1 {video.folder_path}/thumb.jpg'
+       f'-i {use_file} -vframes 1 {video.folder_path}/thumb.jpg'
     subprocess.Popen(shlex.split(thumbnail_command)).wait()
 
     # create gif preview
     gif_command = \
-       f'ffmpeg -y -v quiet -ss {thumbnail_timestamp} -t 5 -i {raw_video_file.name} ' \
+       f'ffmpeg -y -v quiet -ss {thumbnail_timestamp} -t 5 -i {use_file} ' \
        f'-vf "fps=20,scale=640:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" ' \
        f'-loop 0 {video.folder_path}/preview.gif'
     subprocess.Popen(shlex.split(gif_command)).wait()
