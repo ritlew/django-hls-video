@@ -10,6 +10,7 @@ from chunked_upload.models import ChunkedUpload
 from ordered_model.models import OrderedModel
 
 import json
+import logging
 import os
 import time
 

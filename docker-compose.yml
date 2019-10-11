@@ -39,7 +39,7 @@ services:
         restart: unless-stopped
     default_workers:
         image: dhv_app
-        command: celery -A django_hls_video worker -c 5 -l WARNING -E
+        command: celery -A django_hls_video worker -c 5 -l WARNING -E -B
         environment:
             RMQ_USER: ${RMQ_USER}
             RMQ_PASSWORD: ${RMQ_PASSWORD}
