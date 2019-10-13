@@ -215,9 +215,9 @@ class TrackPlaybackView(VideoDetailView):
 
         # reset if 90% of the video has been played
         if seconds > video.duration * .9:
-            vpt.seconds = seconds
-        else:
             vpt.seconds = 0
+        else:
+            vpt.seconds = seconds
 
         vpt.save()
 
