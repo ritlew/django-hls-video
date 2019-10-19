@@ -116,6 +116,19 @@
     </div>
 {% endif %}
 <script>
+    function track_playback(){
+        if ( player && !player.paused() ){
+            seconds = parseInt(player.currentTime());
+
+            $.ajax({
+                type: "POST",
+                data: {"seconds": seconds, "csrfmiddlewaretoken": "{{ csrf_token }}" },
+                dataType: "json",
+                url: "{% url 'track_playback' slug=video.slug %}",
+            });
+        }
+    }
+
     $(window).ready(function(){
         var options = {
             html5: {
@@ -136,8 +149,14 @@
 
             player.hlsQualitySelector();
 
+            {% if seconds > 15 %}
+                player.currentTime({{ seconds }});
+            {% endif %}
+
             player.play();
         {% endif %}
 	});
+
+    setInterval(track_playback, 5000);
 </script>
 {% endblock %}

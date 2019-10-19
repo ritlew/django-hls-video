@@ -21,6 +21,10 @@ TRUE_FALSE_CHOICES = (
     (True, "Yes"),
 )
 
+def format_seconds(seconds):
+    play_time_format = "%-H:%M:%S" if seconds >= (60 * 60) else "%-M:%S"
+    return time.strftime(play_time_format,  time.gmtime(seconds))
+
 
 class VideoCollection(models.Model):
     title = models.CharField(max_length=50)
@@ -91,10 +95,21 @@ class Video(models.Model):
         return json.loads(self.vid_info_str)
 
     @property
+    def duration(self):
+        return int(float(self.vid_info['format']['duration']))
+
+    @property
     def play_time(self):
-        duration = int(float(self.vid_info['format']['duration']))
-        play_time_format = "%-H:%M:%S" if duration >= (60 * 60) else "%-M:%S"
-        return time.strftime(play_time_format,  time.gmtime(duration))
+        return format_seconds(self.duration)
+
+
+class VideoPlaybackTracker(models.Model):
+    video = models.ForeignKey(Video, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    seconds = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return f'{self.user} - {self.video}: {format_seconds(self.seconds)}'
 
 
 class VideoVariant(models.Model):

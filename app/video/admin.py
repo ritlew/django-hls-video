@@ -2,7 +2,8 @@ from django.contrib import admin
 
 from .models import (
     Video, VideoVariant, VideoCollection, 
-    VideoChunkedUpload, VideoCollectionOrder
+    VideoChunkedUpload, VideoCollectionOrder,
+    VideoPlaybackTracker
 )
 
 class VideoInfoAdmin(admin.ModelAdmin):
@@ -14,3 +15,4 @@ admin.site.register(Video, VideoInfoAdmin)
 admin.site.register(VideoCollection)
 admin.site.register(VideoChunkedUpload)
 admin.site.register(VideoCollectionOrder)
+admin.site.register(VideoPlaybackTracker)

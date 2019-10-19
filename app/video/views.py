@@ -27,7 +27,10 @@ from sendfile import sendfile
 
 # local imports
 from .forms import VideoUploadForm
-from .models import Video, VideoCollection, VideoChunkedUpload, VideoCollectionOrder, RESOLUTIONS
+from .models import (
+    Video, VideoCollection, VideoChunkedUpload, VideoCollectionOrder,
+    VideoPlaybackTracker, RESOLUTIONS
+)
 from .decorators import auth_or_404
 
 class VideoListView(ListView):
@@ -118,6 +121,13 @@ class VideoPlayerView(VideoDetailView):
             context['download_options'].append({'resolution': resolution, 'value': i})
         context['download_options'].reverse()
 
+        # playback location
+        vpt, created = VideoPlaybackTracker.objects.get_or_create(
+            user=self.request.user,
+            video=video
+        )
+        context['seconds'] = vpt.seconds
+
         return context
 
 
@@ -185,6 +195,33 @@ class GetVariantVideoView(GetVideoFileView):
             raise Http404()
 
         return field.video_file.name
+
+
+@method_decorator(require_POST, name='dispatch')
+@method_decorator(auth_or_404, name='dispatch')
+class TrackPlaybackView(VideoDetailView):
+    def post(self, request, *args, **kwargs):
+        video = self.get_object()
+
+        try:
+            seconds = int(request.POST.get('seconds', None))
+        except:
+            return HttpResponseBadRequest()
+
+        vpt, created = VideoPlaybackTracker.objects.get_or_create(
+            user=request.user,
+            video=video
+        )
+
+        # reset if 90% of the video has been played
+        if seconds > video.duration * .9:
+            vpt.seconds = 0
+        else:
+            vpt.seconds = seconds
+
+        vpt.save()
+
+        return JsonResponse({}, status=200)
 
 
 @method_decorator(require_POST, name='dispatch')
