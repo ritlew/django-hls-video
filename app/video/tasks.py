@@ -63,6 +63,7 @@ def create_thumbnail(self, video_pk):
     if raw_video_file.name:
         use_file = raw_video_file.name
     else:
+        # get highest quality variant since raw video has been deleted
         use_file = video.variants.all().order_by('-resolution')[1].video_file.name
 
     # change to media directory
