@@ -26,7 +26,11 @@
         <div class="row border m-2">
             <div class="col-md-5 my-2">
                 <a href="{% url 'video_player' slug=vid.slug %}">
-                    <img class="img-fluid" src="{% url 'get_thumbnail' slug=vid.slug %}">
+                    {% if vid.thumbnail %}
+                        <img class="img-fluid" src="{% url 'get_thumbnail' slug=vid.slug %}">
+                    {% else %}
+                        <img class="img-fluid" src="{% static 'video/image/placeholder.jpg' %}">
+                    {% endif %}
                 </a>
             </div>
             <div class="col-md-7 my-2">

@@ -60,6 +60,11 @@ def create_thumbnail(self, video_pk):
     # get the upload object
     video = Video.objects.get(pk=video_pk)
     raw_video_file = VideoChunkedUpload.objects.get(upload_id=video.upload_id).file
+    if raw_video_file.name:
+        use_file = raw_video_file.name
+    else:
+        # get highest quality variant since raw video has been deleted
+        use_file = video.variants.all().order_by('-resolution')[1].video_file.name
 
     # change to media directory
     os.chdir(settings.MEDIA_ROOT)
@@ -71,14 +76,24 @@ def create_thumbnail(self, video_pk):
     # take an image somewhere between 10% to 30% into the video
     random_factor = random.uniform(.1, .3)
     thumbnail_timestamp = strftime('%H:%M:%S', gmtime(int(duration * random_factor)))
+
+    # create jpg thumbnail
     thumbnail_command = \
-       f'ffmpeg -v quiet -hide_banner -ss {thumbnail_timestamp} ' \
-       f'-i {raw_video_file.name} -vframes 1 {video.folder_path}/thumb.jpg'
+       f'ffmpeg -y -v quiet -hide_banner -ss {thumbnail_timestamp} ' \
+       f'-i {use_file} -vframes 1 {video.folder_path}/thumb.jpg'
     subprocess.Popen(shlex.split(thumbnail_command)).wait()
+
+    # create gif preview
+    gif_command = \
+       f'ffmpeg -y -v quiet -ss {thumbnail_timestamp} -t 5 -i {use_file} ' \
+       f'-vf "fps=20,scale=640:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" ' \
+       f'-loop 0 {video.folder_path}/preview.gif'
+    subprocess.Popen(shlex.split(gif_command)).wait()
 
     with transaction.atomic():
         video = Video.objects.select_for_update().get(pk=video_pk)
         video.thumbnail = os.path.join(video.folder_path, "thumb.jpg")
+        video.gif_preview = os.path.join(video.folder_path, "preview.gif")
         video.save()
 
     return
@@ -103,7 +118,7 @@ def create_variants(self, video_pk):
                 print('Height not evenly divisible by 120')
 
     # start ffmpeg command
-    command = f'ffmpeg -v quiet -i {raw_video_file.name} -progress - -c:a aac -ac 2 -c:v libx264 -crf 20 '
+    command = f'ffmpeg -y -v quiet -i {raw_video_file.name} -progress - -c:a aac -ac 2 -c:v libx264 -crf 20 '
 
     # working variables to build stream specific parts of command
     bitrates = ''
@@ -127,13 +142,16 @@ def create_variants(self, video_pk):
         var_map += "v:{},agroup:aud ".format(i, i)
 
         # save variant
-        variant = VideoVariant(
-            master=video,
-            playlist_file=os.path.join(video.folder_path, f'{i}.m3u8'),
-            video_file=os.path.join(video.folder_path, f"{i}.m4s"),
-            resolution=i
-        )
-        variant.save()
+        try:
+            VideoVariant.objects.get(master=video, resolution=i)
+        except VideoVariant.DoesNotExist:
+            variant = VideoVariant(
+                master=video,
+                playlist_file=os.path.join(video.folder_path, f'{i}.m3u8'),
+                video_file=os.path.join(video.folder_path, f"{i}.m4s"),
+                resolution=i
+            )
+            variant.save()
 
     # cap off command parts
     filters = filters[:-1] + "' "
@@ -141,13 +159,16 @@ def create_variants(self, video_pk):
     var_map += "a:0,agroup:aud'"
 
     # audio-only variant
-    variant = VideoVariant(
-        master=video,
-        playlist_file=os.path.join(video.folder_path, f'{last+1}.m3u8'),
-        video_file=os.path.join(video.folder_path, f'{last+1}.m4s'),
-        resolution=last+1
-    )
-    variant.save()
+    try:
+        VideoVariant.objects.get(master=video, resolution=last+1)
+    except VideoVariant.DoesNotExist:
+        variant = VideoVariant(
+            master=video,
+            playlist_file=os.path.join(video.folder_path, f'{last+1}.m3u8'),
+            video_file=os.path.join(video.folder_path, f'{last+1}.m4s'),
+            resolution=last+1
+        )
+        variant.save()
 
     # combine into final command
     command += f'{bitrates} {filters} {maps} \
@@ -206,4 +227,29 @@ def cleanup_video_processing(self, video_pk):
         video.processing_id = None
         video.processed = True
         video.save()
+
+
+@shared_task(bind=True)
+def startup_task(self):
+    processed_videos = Video.objects.filter(processed=True)
+    unprocessed_videos = Video.objects.filter(processed=False)
+
+    # check for unprocessed videos
+    if unprocessed_videos:
+        logging.debug(f'Found {len(unprocessed_videos)} unprocessed videos')
+        with transaction.atomic():
+            # remove the processing_id from these videos
+            reprocess_videos = Video.objects.select_for_update().filter(processed=False)
+            reprocess_videos.update(processing_id = None)
+
+            # begin reprocessing
+            for video in reprocess_videos:
+                video.begin_processing()
+
+    # check video thumbnails and previews in processed videos
+    videos = processed_videos.filter(thumbnail=None) | processed_videos.filter(gif_preview=None)
+    logging.debug(f'Found {len(videos)} videos without thumbnails or gif previews')
+
+    for video in videos:
+        create_thumbnail.delay(video.pk)
 
