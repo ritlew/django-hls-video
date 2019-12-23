@@ -23,13 +23,7 @@ services:
             context: .
             dockerfile: dockerfiles/uwsgi.dockerfile
         command: sh -c "python manage.py collectstatic --noinput && python manage.py migrate && uwsgi --ini /code/django-hls-video"
-        environment:
-            RMQ_USER: ${RMQ_USER}
-            RMQ_PASSWORD: ${RMQ_PASSWORD}
-            POSTGRES_USER: ${DB_USER}
-            POSTGRES_PASSWORD: ${DB_PASSWORD}
-            PROD: ${UWSGI_PROD}
-            SECRET_KEY: ${SECRET_KEY}
+        env_file: .env
         volumes:
             - static-content:/code/static:z
             - media-files:/code/media:z
@@ -39,14 +33,8 @@ services:
         restart: unless-stopped
     default_workers:
         image: dhv_app
-        command: celery -A django_hls_video worker -c 5 -l WARNING -E -B
-        environment:
-            RMQ_USER: ${RMQ_USER}
-            RMQ_PASSWORD: ${RMQ_PASSWORD}
-            POSTGRES_USER: ${DB_USER}
-            POSTGRES_PASSWORD: ${DB_PASSWORD}
-            SECRET_KEY: ${SECRET_KEY}
-            PROD: ${UWSGI_PROD}
+        command: celery -A django_hls_video worker -c 5 -l DEBUG -E -B
+        env_file: .env
         volumes:
             - media-files:/code/media
         depends_on:
@@ -57,13 +45,7 @@ services:
     encoding_worker:
         image: dhv_app
         command: celery -A django_hls_video worker -Q encoding_queue -c 1 -l WARNING -E
-        environment:
-            RMQ_USER: ${RMQ_USER}
-            RMQ_PASSWORD: ${RMQ_PASSWORD}
-            POSTGRES_USER: ${DB_USER}
-            POSTGRES_PASSWORD: ${DB_PASSWORD}
-            SECRET_KEY: ${SECRET_KEY}
-            PROD: ${UWSGI_PROD}
+        env_file: .env
         volumes:
             - media-files:/code/media
         depends_on:
@@ -73,12 +55,7 @@ services:
         restart: unless-stopped
     daphne:
         image: dhv_app
-        environment:
-            RMQ_USER: ${RMQ_USER}
-            RMQ_PASSWORD: ${RMQ_PASSWORD}
-            POSTGRES_USER: ${DB_USER}
-            POSTGRES_PASSWORD: ${DB_PASSWORD}
-            SECRET_KEY: ${SECRET_KEY}
+        env_file: .env
         command: daphne -b 0.0.0.0 -p 8002 django_hls_video.asgi:application
         volumes:
             - media-files:/code/media:ro
@@ -89,7 +66,7 @@ services:
     nginx:
         image: nginx:1.15.8-alpine
         ports: 
-            - "4002:80"
+            - ${PROXY_PORT}:80
         volumes:
             - static-content:/static:ro
             - media-files:/media:ro
