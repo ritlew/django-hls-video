@@ -35,7 +35,7 @@ MESSAGE_TAGS = {
     messages.ERROR: f'{ALERT_BASE} alert-danger',
 }
 
-if os.environ.get("PROD"):
+if os.environ.get("UWSGI_PROD"):
     DEBUG = False
     WEBSOCKET_PROTOCOL = "wss://"
 else:
@@ -118,7 +118,7 @@ CHANNEL_LAYERS = {
 # Database
 # https://docs.djangoproject.com/en/1.9/ref/settings/#databases
 
-if os.environ.get("DB_ENV") == "dummy" and not os.environ.get("PROD"):
+if os.environ.get("DB_ENV") == "dummy" and not os.environ.get("UWSGI_PROD"):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.dummy',
