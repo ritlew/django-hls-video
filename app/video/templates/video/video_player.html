@@ -157,6 +157,8 @@
         {% endif %}
 	});
 
-    setInterval(track_playback, 5000);
+    {% if seconds is not None %}
+        setInterval(track_playback, 5000);
+    {% endif %}
 </script>
 {% endblock %}

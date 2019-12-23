@@ -22,6 +22,8 @@ ALLOWED_HOSTS = [
     'localhost', '127.0.0.1',
     # other containers
     'daphne',
+    # user defined hosts
+    *os.environ.get('HOSTS').split(',')
 ]
 
 # bootstrap alert classes
@@ -127,8 +129,8 @@ else:
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': 'postgres',
-            'USER': os.environ.get('POSTGRES_USER'),
-            'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
+            'USER': os.environ.get('DB_USER'),
+            'PASSWORD': os.environ.get('DB_PASSWORD'),
             'HOST': 'db',
             'PORT': 5432,
         }
