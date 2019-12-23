@@ -122,11 +122,12 @@ class VideoPlayerView(VideoDetailView):
         context['download_options'].reverse()
 
         # playback location
-        vpt, created = VideoPlaybackTracker.objects.get_or_create(
-            user=self.request.user,
-            video=video
-        )
-        context['seconds'] = vpt.seconds
+        if self.request.user.is_authenticated:
+            vpt, created = VideoPlaybackTracker.objects.get_or_create(
+                user=self.request.user,
+                video=video
+            )
+            context['seconds'] = vpt.seconds
 
         return context
 
