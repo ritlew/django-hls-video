@@ -42,11 +42,15 @@ class VideoListView(ListView):
     def get_queryset(self):
         collection_request = self.kwargs.get('collection', None)
 
-        video_results = Video.objects.filter(processed=True).order_by("-pk")
-
         # if the user is requesting videos a specific collection
         if collection_request:
-            video_results = video_results.filter(collections__slug=collection_request)
+            video_results = VideoCollectionOrder.objects.filter(
+                collection__slug=collection_request,
+                video__processed=True
+            ).order_by("order")
+            video_results = [i.video for i in video_results]
+        else:
+            video_results = Video.objects.filter(processed=True).order_by("-pk")
         if not self.request.user.is_authenticated:
             video_results = video_results.filter(public=True)
 
