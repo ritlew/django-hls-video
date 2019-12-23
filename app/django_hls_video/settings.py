@@ -25,7 +25,6 @@ ALLOWED_HOSTS = [
     # user defined hosts
     *os.environ.get('HOSTS').split(',')
 ]
-print(ALLOWED_HOSTS)
 
 # bootstrap alert classes
 ALERT_BASE = 'alert alert-dismissable'
