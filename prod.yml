@@ -17,7 +17,7 @@ services:
             RABBITMQ_DEFAULT_USER: ${RMQ_USER}
             RABBITMQ_DEFAULT_PASS: ${RMQ_PASSWORD}
         restart: unless-stopped
-    uwsgi:
+    web:
         image: dhv_app
         build: 
             context: .
@@ -40,7 +40,7 @@ services:
         depends_on:
             - db
             - rabbitmq
-            - uwsgi
+            - web
         restart: unless-stopped
     encoding_worker:
         image: dhv_app
@@ -51,7 +51,7 @@ services:
         depends_on:
             - db
             - rabbitmq
-            - uwsgi
+            - web
         restart: unless-stopped
     daphne:
         image: dhv_app
@@ -73,7 +73,7 @@ services:
             - ./config/nginx/conf.d:/etc/nginx/conf.d:Z
         depends_on:
             - daphne
-            - uwsgi
+            - web
         restart: unless-stopped
 
 volumes:
