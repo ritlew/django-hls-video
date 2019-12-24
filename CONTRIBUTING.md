@@ -20,7 +20,7 @@ functional.
 1. Install [docker](https://docs.docker.com/install/) and 
 [docker-compose](https://docs.docker.com/compose/install/).
 
-2. Navigate to the repo directory (where docker-compose.yml 
+2. Navigate to the repo directory (where dev.yml and prod.yml 
 is).
 
 3. Copy the file `.blankenv` to `.env` and enter values that
@@ -33,17 +33,17 @@ in the `scripts` directory.
 
 4. Create superuser account (this will be needed for development):
 ```
-docker run uwsgi sh
+docker run web sh
 python manage.py createsuperuser
 exit
 ```
 
-5. Run `docker-compose up --build`. The server will be available
-on http://localhost:4002. Login at http://localhost:4002/admin
+5. Run `docker-compose -f dev.yml up --build`. The server will be available
+on http://localhost:4001. Login at http://localhost:4001/admin
 using the credentials created earlier to use most of the 
 functionality of the website.
 
 ## Development
-Make changes to the local files and then start the containers with
-`docker-compose up --build`. Note the `--build` is necessary to update
-the files in the containers.
+Make changes to the local files the files will update automatically as long
+as you used the `dev.yml` in the `docker-compose` command. If things aren't 
+updating or you are changing other services, you will probably need to rebuild.
