@@ -1,6 +1,7 @@
 # files
 db.sqlite3
 .env
+celerybeat-schedule
 
 # folders
 .idea/

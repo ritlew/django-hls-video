@@ -1,0 +1,87 @@
+version: '3'
+
+services:
+    db:
+        image: postgres:11.1-alpine
+        command: postgres -c log_min_error_statement=WARNING
+        user: postgres
+        volumes:
+            - web-db:/var/lib/postgresql/data:Z
+        environment:
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+        restart: unless-stopped
+    rabbitmq:
+        image: 'rabbitmq:3.7-alpine'
+        environment:
+            RABBITMQ_DEFAULT_USER: ${RMQ_USER}
+            RABBITMQ_DEFAULT_PASS: ${RMQ_PASSWORD}
+        restart: unless-stopped
+    web:
+        image: dhv_app
+        build: 
+            context: .
+            dockerfile: dockerfiles/dev.dockerfile
+        command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+        env_file: .env
+        volumes:
+            - static-content:/code/static:z
+            - media-files:/code/media:z
+            - ./app:/code
+        depends_on:
+            - db
+            - rabbitmq
+        restart: unless-stopped
+    default_workers:
+        image: dhv_app
+        command: celery -A django_hls_video worker -c 5 -l WARNING -E -B
+        env_file: .env
+        volumes:
+            - media-files:/code/media
+            - ./app:/code
+        depends_on:
+            - db
+            - rabbitmq
+            - web
+        restart: unless-stopped
+    encoding_worker:
+        image: dhv_app
+        command: celery -A django_hls_video worker -Q encoding_queue -c 1 -l WARNING -E
+        env_file: .env
+        volumes:
+            - media-files:/code/media
+            - ./app:/code
+        depends_on:
+            - db
+            - rabbitmq
+            - web
+        restart: unless-stopped
+    daphne:
+        image: dhv_app
+        env_file: .env
+        command: daphne -b 0.0.0.0 -p 8002 django_hls_video.asgi:application
+        volumes:
+            - media-files:/code/media:ro
+            - ./app:/code
+        depends_on:
+            - db
+            - rabbitmq
+        restart: unless-stopped
+    nginx:
+        image: nginx:1.15.8-alpine
+        ports: 
+            - ${PROXY_PORT}:80
+        volumes:
+            - static-content:/static:ro
+            - media-files:/media:ro
+            - ./config/nginx/conf.d:/etc/nginx/conf.d:Z
+        depends_on:
+            - daphne
+            - web
+        restart: unless-stopped
+
+volumes:
+    static-content:
+    web-db:
+    media-files:
+
