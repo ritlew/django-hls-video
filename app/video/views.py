@@ -66,7 +66,7 @@ class VideoListView(ListView):
                 Q(title__icontains=search) |
                 Q(description__icontains=search) |
                 Q(collections__title__icontains=search)
-            )
+            ).distinct()
 
         return video_results
 
