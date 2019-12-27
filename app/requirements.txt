@@ -11,7 +11,7 @@ billiard==3.6.0.0
 cached-property==1.5.1
 celery==4.3.0
 cffi==1.12.3
-channels==2.2.0
+channels==2.4.0
 channels-rabbitmq==1.1.5
 constantly==15.1.0
 cryptography==2.7
