@@ -18,6 +18,7 @@ from django.http import (
 import json
 import logging
 import os
+import random
 import shlex
 import sys
 import subprocess
@@ -75,7 +76,7 @@ class VideoListView(ListView):
         video_results = context['videos']
         collection_request = self.kwargs.get('collection', None)
 
-        collections = VideoCollection.objects.order_by("?")
+        collections = VideoCollection.objects.all()
         if not self.request.user.is_authenticated:
             # if user is not authenticated, only show public videos and connected collections
             collection_pks = video_results.values_list('collections', flat=True)
@@ -84,11 +85,12 @@ class VideoListView(ListView):
         if collection_request:
             requested = collections.filter(slug=collection_request)
             if requested:
-                collections = list(collections.filter(slug=collection_request)) + list(collections.exclude(pk__in=requested)[0:4].order_by('-title'))
+                others = collections.exclude(pk__in=requested).order_by('-title')
+                collections = list(collections.filter(slug=collection_request)) + random.sample(list(other), k=min(len(others), 4))
             else:
-                collections = collections[0:4]
+                collections = random.sample(list(collections), k=min(len(collections), 5))
         else:
-            collections = collections[0:5].order_by('-title')
+            collections = random.sample(list(collections.order_by('-title')), k=min(len(collections), 5))
 
         context['collections'] = collections
         context['collection'] = collection_request
