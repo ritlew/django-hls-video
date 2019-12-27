@@ -92,7 +92,7 @@ class VideoListView(ListView):
         else:
             collections = random.sample(list(collections), k=min(len(collections), 5))
 
-        collections.sort(key=lambda obj: obj.title, reverse=True)
+        collections.sort(key=lambda obj: obj.title.lower())
 
         context['collections'] = collections
         context['collection'] = collection_request
