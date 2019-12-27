@@ -86,7 +86,7 @@ class VideoListView(ListView):
             requested = collections.filter(slug=collection_request)
             if requested:
                 others = collections.exclude(pk__in=requested)
-                collections = list(collections.filter(slug=collection_request)) + random.sample(list(other), k=min(len(others), 4))
+                collections = list(collections.filter(slug=collection_request)) + random.sample(list(others), k=min(len(others), 4))
             else:
                 collections = random.sample(list(collections), k=min(len(collections), 5))
         else:
