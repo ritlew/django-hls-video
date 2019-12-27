@@ -85,12 +85,14 @@ class VideoListView(ListView):
         if collection_request:
             requested = collections.filter(slug=collection_request)
             if requested:
-                others = collections.exclude(pk__in=requested).order_by('-title')
+                others = collections.exclude(pk__in=requested)
                 collections = list(collections.filter(slug=collection_request)) + random.sample(list(other), k=min(len(others), 4))
             else:
                 collections = random.sample(list(collections), k=min(len(collections), 5))
         else:
-            collections = random.sample(list(collections.order_by('-title')), k=min(len(collections), 5))
+            collections = random.sample(list(collections), k=min(len(collections), 5))
+
+        collections.sort(key=lambda obj: obj.title, reverse=True)
 
         context['collections'] = collections
         context['collection'] = collection_request
