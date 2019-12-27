@@ -3,6 +3,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction, DatabaseError
+from django.db.models import Q
 from django.shortcuts import render, redirect
 from django.views.decorators.http import require_POST
 from django.views.generic.base import View, TemplateView
@@ -15,8 +16,10 @@ from django.http import (
 
 # Python standard imports
 import json
+import logging
 import os
 import shlex
+import sys
 import subprocess
 
 # third-party imports
@@ -44,15 +47,25 @@ class VideoListView(ListView):
 
         # if the user is requesting videos a specific collection
         if collection_request:
-            video_results = VideoCollectionOrder.objects.filter(
+            order_results = VideoCollectionOrder.objects.filter(
                 collection__slug=collection_request,
                 video__processed=True
-            ).order_by("order")
-            video_results = [i.video for i in video_results]
+            ).values_list('video', flat=True).order_by("order")
+            video_results = Video.objects.filter(pk__in=order_results)
         else:
             video_results = Video.objects.filter(processed=True).order_by("-pk")
+
         if not self.request.user.is_authenticated:
             video_results = video_results.filter(public=True)
+
+        # query from the search bar
+        search = self.request.GET.get('search', None)
+        if search:
+            video_results = video_results.filter(
+                Q(title__icontains=search) |
+                Q(description__icontains=search) |
+                Q(collections__title__icontains=search)
+            )
 
         return video_results
 
@@ -62,15 +75,24 @@ class VideoListView(ListView):
         video_results = context['videos']
         collection_request = self.kwargs.get('collection', None)
 
-        if self.request.user.is_authenticated:
-            collections = VideoCollection.objects.all()
-        else:
+        collections = VideoCollection.objects.order_by("?")
+        if not self.request.user.is_authenticated:
             # if user is not authenticated, only show public videos and connected collections
             collection_pks = video_results.values_list('collections', flat=True)
-            collections = VideoCollection.objects.filter(id__in=collection_pks)
+            collections = collections.filter(id__in=collection_pks)
+
+        if collection_request:
+            requested = collections.filter(slug=collection_request)
+            if requested:
+                collections = list(collections.filter(slug=collection_request)) + list(collections.exclude(pk__in=requested).order_by('-title')[0:4])
+            else:
+                collections = collections[0:4]
+        else:
+            collections = collections.order_by('-title')
 
         context['collections'] = collections
-        context['search'] = collection_request
+        context['collection'] = collection_request
+        context['search'] = self.request.GET.get('search', "")
         return context
 
 

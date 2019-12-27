@@ -25,19 +25,23 @@
             <li class="nav-item">
                 <a class="nav-link" href="{% url 'video_index' %}">Videos</a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'user_uploads' %}">Uploads</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'collection_edit' %}">Manage Collections</a>
-            </li>
+            {% if user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'user_uploads' %}">Uploads</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'collection_edit' %}">Manage Collections</a>
+                </li>
+            {% endif %}
         </ul>
     </div>
 </nav>
 <div class="container">
-    <div class="jumbotron py-3">
-        <div class="container text-center">
-            <h1 class="mb-0">{% block page_title %}{% endblock %}</h1>
+    <div class="row">
+        <div class="col-12 my-3">
+            <div class="container text-center">
+                <h1 class="mb-0">{% block page_title %}{% endblock %}</h1>
+            </div>
         </div>
     </div>
     {% if messages %}
