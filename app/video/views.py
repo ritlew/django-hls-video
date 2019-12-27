@@ -88,7 +88,7 @@ class VideoListView(ListView):
             else:
                 collections = collections[0:4]
         else:
-            collections = collections.order_by('-title')
+            collections = collections.order_by('-title')[0:5]
 
         context['collections'] = collections
         context['collection'] = collection_request
