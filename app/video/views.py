@@ -84,11 +84,11 @@ class VideoListView(ListView):
         if collection_request:
             requested = collections.filter(slug=collection_request)
             if requested:
-                collections = list(collections.filter(slug=collection_request)) + list(collections.exclude(pk__in=requested).order_by('-title')[0:4])
+                collections = list(collections.filter(slug=collection_request)) + list(collections.exclude(pk__in=requested)[0:4].order_by('-title'))
             else:
                 collections = collections[0:4]
         else:
-            collections = collections.order_by('-title')[0:5]
+            collections = collections[0:5].order_by('-title')
 
         context['collections'] = collections
         context['collection'] = collection_request
