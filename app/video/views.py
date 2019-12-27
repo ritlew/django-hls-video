@@ -51,8 +51,8 @@ class VideoListView(ListView):
             order_results = VideoCollectionOrder.objects.filter(
                 collection__slug=collection_request,
                 video__processed=True
-            ).values_list('video', flat=True).order_by("order")
-            video_results = Video.objects.filter(pk__in=order_results)
+            ).values_list('video', flat=True)
+            video_results = Video.objects.filter(pk__in=order_results).order_by("order")
         else:
             video_results = Video.objects.filter(processed=True).order_by("-pk")
 
