@@ -4,7 +4,8 @@ from . import views
 
 urlpatterns = [
     path('', views.VideoListView.as_view(), name="video_index"),
-    path('search/<collection>/', views.VideoListView.as_view(), name="video_index"),
+    path('collection/<collection>/', views.VideoListView.as_view(), name="video_index"),
+    path('tag/<tag>/', views.VideoListView.as_view(), name="video_index"),
     path('videos/<slug:slug>/', include([
         path('play/', views.VideoPlayerView.as_view(), name="video_player"),
         path('edit/', views.EditVideoView.as_view(), name="edit_video"),

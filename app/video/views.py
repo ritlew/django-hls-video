@@ -41,6 +41,7 @@ class VideoListView(ListView):
 
     def get_queryset(self):
         collection_request = self.kwargs.get('collection', None)
+        tag_request = self.kwargs.get('tag', None)
 
         # if the user is requesting videos a specific collection
         if collection_request:
@@ -49,6 +50,8 @@ class VideoListView(ListView):
                 video__processed=True
             ).order_by("order")
             video_results = [i.video for i in video_results]
+        elif tag_request:
+            video_results = Video.objects.filter(tags__slug=tag_request, processed=True)
         else:
             video_results = Video.objects.filter(processed=True).order_by("-pk")
         if not self.request.user.is_authenticated:
@@ -61,16 +64,22 @@ class VideoListView(ListView):
 
         video_results = context['videos']
         collection_request = self.kwargs.get('collection', None)
+        tag_request = self.kwargs.get('tag', None)
 
         if self.request.user.is_authenticated:
             collections = VideoCollection.objects.all()
+            tags = VideoTag.objects.all()
         else:
             # if user is not authenticated, only show public videos and connected collections
             collection_pks = video_results.values_list('collections', flat=True)
+            tag_pks = video_results.values_list('tags', flat=True)
             collections = VideoCollection.objects.filter(id__in=collection_pks)
+            tags = VideoCollection.objects.filter(id__in=tag_pks)
 
-        context['collections'] = collections
-        context['search'] = collection_request
+        context['collections'] = collections[:5]
+        context['tags'] = tags[:5]
+        context['collection_search'] = collection_request
+        context['tag_search'] = tag_request
         return context
 
 

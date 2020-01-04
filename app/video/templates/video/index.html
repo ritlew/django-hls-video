@@ -39,9 +39,7 @@
 {% block page_title %}
     Videos
 {% endblock %}
-
-{% block main %}
-<div class="row mt-2">
+{% block main %} <div class="row mt-2">
     {# sidebar #}
     <div class="col-lg-2">
         {# Video upload button #}
@@ -57,17 +55,37 @@
                 Collections
             </a>
             {% for c in collections %}
-            {% if search == c.slug %}
-            <a href="{% url 'video_index' collection=c.slug %}" 
-               class="list-group-item list-group-item-action bg-info text-white">
-                {{ c.title }}
+                {% if collection_search == c.slug %}
+                    <a href="{% url 'video_index' collection=c.slug %}"
+                       class="list-group-item list-group-item-action bg-info text-white">
+                        {{ c.title }}
+                    </a>
+                {% else %}
+                    <a href="{% url 'video_index' collection=c.slug %}"
+                       class="list-group-item list-group-item-action">
+                        {{ c.title }}
+                    </a>
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% if tags %}
+        <div class="list-group sticky-top py-3">
+            <a class="list-group-item list-group-item-action active">
+                Tags
             </a>
-            {% else %}
-            <a href="{% url 'video_index' collection=c.slug %}" 
-               class="list-group-item list-group-item-action">
-                {{ c.title }}
-            </a>
-            {% endif %}
+            {% for t in tags %}
+                {% if tag_search == t.slug %}
+                    <a href="{% url 'video_index' tag=t.slug %}"
+                       class="list-group-item list-group-item-action bg-info text-white">
+                        {{ t.title }}
+                    </a>
+                {% else %}
+                    <a href="{% url 'video_index' tag=t.slug %}"
+                       class="list-group-item list-group-item-action">
+                        {{ t.title }}
+                    </a>
+                {% endif %}
             {% endfor %}
         </div>
         {% endif %}
@@ -85,9 +103,9 @@
                 </a>
                 <div class="text-white mb-1">
                     <div class="row align-items-center bg-dark h-25 py-2 mx-0">
-                        {% for c in vid.collections.all %}
-                        <a class="col-auto" href="{% url 'video_index' collection=c.slug %}">
-                            <span class="badge badge-pill badge-secondary badge-large-text">{{ c.title }}</span>
+                        {% for t in vid.tags.all %}
+                        <a class="col-auto" href="{% url 'video_index' tag=t.slug %}">
+                            <span class="badge badge-pill badge-secondary badge-large-text">{{ t.title }}</span>
                         </a>
                         {% endfor %}
                     </div>
