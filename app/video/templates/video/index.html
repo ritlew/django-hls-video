@@ -42,6 +42,7 @@
 {% block main %} <div class="row mt-2">
     {# sidebar #}
     <div class="col-lg-2">
+        <div class="sticky-top py-2">
         {# Video upload button #}
         {% if request.user.is_staff or request.user.is_superuser %}
         <div class="text-center">
@@ -50,7 +51,7 @@
         {% endif %}
         {# collections nav #}
         {% if collections %}
-        <div class="list-group sticky-top py-3">
+        <div class="list-group py-3">
             <a class="list-group-item list-group-item-action active">
                 Collections
             </a>
@@ -70,7 +71,7 @@
         </div>
         {% endif %}
         {% if tags %}
-        <div class="list-group sticky-top py-3">
+        <div class="list-group py-3">
             <a class="list-group-item list-group-item-action active">
                 Tags
             </a>
@@ -89,6 +90,7 @@
             {% endfor %}
         </div>
         {% endif %}
+        </div>
     </div>
 
     {# display videos #}
