@@ -35,6 +35,15 @@ class VideoCollection(models.Model):
         return self.title
 
 
+class VideoTag(models.Model):
+    title = models.CharField(max_length=50)
+    description = models.CharField(max_length=50, null=True)
+    slug = AutoSlugField(populate_from='title', unique=True)
+
+    def __str__(self):
+        return self.title
+
+
 class Video(models.Model):
     ### user facing elements
     title = models.CharField(max_length=50, default='Untitled')
@@ -47,6 +56,10 @@ class Video(models.Model):
         VideoCollection,
         related_name='videos',
         through='video.VideoCollectionOrder',
+    )
+    tags = models.ManyToManyField(
+        VideoTag,
+        related_name='videos',
     )
 
     ### interal logic elements

@@ -22,6 +22,9 @@ class VideoUploadForm(BootstrapModelForm):
         self.fields['collections'].widget.attrs.update({
             'data-theme': 'bootstrap',
         })
+        self.fields['tags'].widget.attrs.update({
+            'data-theme': 'bootstrap',
+        })
 
         self.fields['upload_id'].label = ''
 
@@ -42,8 +45,9 @@ class VideoUploadForm(BootstrapModelForm):
 
     class Meta:
         model = Video
-        fields = ['title', 'description', 'collections', 'public', 'upload_id']
+        fields = ['title', 'description', 'tags', 'collections', 'public', 'upload_id']
         widgets = {
+            'tags': autocomplete.ModelSelect2Multiple(url='autocomplete_tag'),
             'collections': autocomplete.ModelSelect2Multiple(url='autocomplete_collection'),
             'upload_id': forms.HiddenInput(),
         }

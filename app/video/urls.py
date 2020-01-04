@@ -31,6 +31,11 @@ urlpatterns = [
             views.CollectionAutocomplete.as_view(create_field='title'),
             name='autocomplete_collection'
         ),
+        path(
+            'tag/',
+            views.TagAutocomplete.as_view(create_field='title'),
+            name='autocomplete_tag'
+        ),
     ])),
     path('video_file_upload/', include([
         path('', views.VideoChunkedUploadView.as_view(), name='video_chunked_upload'),

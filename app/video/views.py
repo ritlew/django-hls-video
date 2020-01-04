@@ -29,7 +29,7 @@ from sendfile import sendfile
 from .forms import VideoUploadForm
 from .models import (
     Video, VideoCollection, VideoChunkedUpload, VideoCollectionOrder,
-    VideoPlaybackTracker, RESOLUTIONS
+    VideoTag, VideoPlaybackTracker, RESOLUTIONS
 )
 from .decorators import auth_or_404
 
@@ -405,6 +405,20 @@ class CollectionAutocomplete(autocomplete.Select2QuerySetView):
             return VideoCollection.objects.none()
 
         queryset = VideoCollection.objects.all().order_by('title')
+
+        if self.q:
+            queryset = queryset.filter(title__istartswith=self.q)
+
+        return queryset
+
+
+# https://django-autocomplete-light.readthedocs.io/en/master/tutorial.html
+class TagAutocomplete(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return VideoTag.objects.none()
+
+        queryset = VideoTag.objects.all().order_by('title')
 
         if self.q:
             queryset = queryset.filter(title__istartswith=self.q)
