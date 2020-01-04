@@ -19,9 +19,11 @@ class VideoUploadForm(BootstrapModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.fields['collections'].required = False
         self.fields['collections'].widget.attrs.update({
             'data-theme': 'bootstrap',
         })
+        self.fields['tags'].required = False
         self.fields['tags'].widget.attrs.update({
             'data-theme': 'bootstrap',
         })
