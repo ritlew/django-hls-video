@@ -22,7 +22,7 @@ urlpatterns = [
     ])),
     path('upload/', views.VideoFormView.as_view(), name="video_form"),
     path('uploads/', views.UserUploadsView.as_view(), name="user_uploads"),
-    path('collection/', include([
+    path('collections/', include([
         path('edit/', views.EditVideoCollectionView.as_view(), name='collection_edit'),
         path('<slug:slug>/edit/', views.EditVideoCollectionView.as_view(), name='collection_edit'),
     ])),
