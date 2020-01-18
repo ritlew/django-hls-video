@@ -111,7 +111,9 @@ def create_variants(self, video_pk):
     for stream in video.vid_info['streams']:
         if stream['codec_type'] == 'video':
             # force original video display aspect resolution
-            DAR = stream['display_aspect_ratio'].replace(':', '/')
+            DAR = stream.get('display_aspect_ratio', None)
+            if DAR:
+                DAR = DAR.replace(':', '/')
             # video height
             height = int(stream['height'])
             if height % 120 != 0:
@@ -137,7 +139,11 @@ def create_variants(self, video_pk):
             break
         last = i
         bitrates += "-b:v:{} {}k ".format(i, BITRATES[i])
-        filters += "[0:v]scale=-2:{},setdar={}[o{}];".format(res, DAR, res)
+        filters += f"[0:v]scale=-2:{res}"
+        if DAR:
+            filters += f",setdar={DAR}"
+        filters += f"[o{res}];"
+
         maps += "-map '[o{}]' ".format(res)
         var_map += "v:{},agroup:aud ".format(i, i)
 
