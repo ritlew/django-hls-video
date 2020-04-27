@@ -116,6 +116,7 @@ def create_variants(self, video_pk):
             height = int(stream['height'])
             if height % 120 != 0:
                 print('Height not evenly divisible by 120')
+            break
 
     # start ffmpeg command
     command = f'ffmpeg -y -v quiet -i {raw_video_file.name} -progress - -c:a aac -ac 2 -c:v libx264 -crf 20 '
