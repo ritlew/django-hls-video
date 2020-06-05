@@ -16,7 +16,7 @@ channels-rabbitmq==1.1.5
 constantly==15.1.0
 cryptography==2.7
 daphne==2.3.0
-Django==2.2.8
+Django==2.2.13
 django-autocomplete-light==3.3.5
 django-autoslug==1.9.4
 django-chunked-upload==1.1.3
